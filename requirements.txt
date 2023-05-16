@@ -1,0 +1,5 @@
+kaggle
+pytest
+pylint
+ipython
+ipykernel
