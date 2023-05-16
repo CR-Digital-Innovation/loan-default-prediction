@@ -1,5 +1,8 @@
-kaggle
+s3fs
 pytest
 pylint
 ipython
 ipykernel
+pandas
+numpy
+pyyaml
