@@ -6,3 +6,6 @@ ipykernel
 pandas
 numpy
 pyyaml
+nbval
+matplotlib
+seaborn
