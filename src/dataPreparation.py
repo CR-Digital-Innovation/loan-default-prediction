@@ -28,10 +28,11 @@ def null_value_column_list(df: pd.DataFrame, percentage: float) -> list:
 def convert_obj_to_cat(df: pd.DataFrame) -> pd.DataFrame:
     """This function takes the dataframe and converts the object datatype columns into categorical columns"""
 
-    obj_columns = df.select_dtypes(include='object').columns.tolist()
-    for col in obj_columns;
+    obj_columns = df.select_dtypes(include="object").columns.tolist()
+    for col in obj_columns:
         df[col] = pd.Categorical(df[col])
     return df
+
 
 applicationDf = load_dataframe(DATASET_1)
 previousDf = load_dataframe(DATASET_2)
@@ -86,42 +87,71 @@ applicationDf.drop(labels=unwanted_columns_applicationDf, axis=1, inplace=True)
 """
 
 # Converting Negative days to positive days
-date_col = ['DAYS_BIRTH','DAYS_EMPLOYED','DAYS_REGISTRATION','DAYS_ID_PUBLISH']
+date_col = ["DAYS_BIRTH", "DAYS_EMPLOYED", "DAYS_REGISTRATION", "DAYS_ID_PUBLISH"]
 
 for col in date_col:
     applicationDf[col] = abs(applicationDf[col])
 
 # Creating bins for Age
-applicationDf['AGE'] = applicationDf['DAYS_BIRTH'] // 365
-bins = [0,20,30,40,50,100]
-slots = ['0-20','20-30','30-40','40-50','50 above']
+applicationDf["AGE"] = applicationDf["DAYS_BIRTH"] // 365
+bins = [0, 20, 30, 40, 50, 100]
+slots = ["0-20", "20-30", "30-40", "40-50", "50 above"]
 
-applicationDf['AGE_GROUP']=pd.cut(applicationDf['AGE'],bins=bins,labels=slots)
+applicationDf["AGE_GROUP"] = pd.cut(applicationDf["AGE"], bins=bins, labels=slots)
 
 # Creating bins for Employement Time
-applicationDf['YEARS_EMPLOYED'] = applicationDf['DAYS_EMPLOYED'] // 365
-bins = [0,5,10,20,30,40,50,60,150]
-slots = ['0-5','5-10','10-20','20-30','30-40','40-50','50-60','60 above']
+applicationDf["YEARS_EMPLOYED"] = applicationDf["DAYS_EMPLOYED"] // 365
+bins = [0, 5, 10, 20, 30, 40, 50, 60, 150]
+slots = ["0-5", "5-10", "10-20", "20-30", "30-40", "40-50", "50-60", "60 above"]
 
-applicationDf['EMPLOYMENT_YEAR']=pd.cut(applicationDf['YEARS_EMPLOYED'],bins=bins,labels=slots)
+applicationDf["EMPLOYMENT_YEAR"] = pd.cut(
+    applicationDf["YEARS_EMPLOYED"], bins=bins, labels=slots
+)
 
 # Creating bins for income amount
-applicationDf['AMT_INCOME_TOTAL']=applicationDf['AMT_INCOME_TOTAL']/100000
-bins = [0,1,2,3,4,5,6,7,8,9,10,11]
-slots = ['0-100K','100K-200K', '200k-300k','300k-400k','400k-500k','500k-600k','600k-700k','700k-800k','800k-900k','900k-1M', '1M Above']
+applicationDf["AMT_INCOME_TOTAL"] = applicationDf["AMT_INCOME_TOTAL"] / 100000
+bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+slots = [
+    "0-100K",
+    "100K-200K",
+    "200k-300k",
+    "300k-400k",
+    "400k-500k",
+    "500k-600k",
+    "600k-700k",
+    "700k-800k",
+    "800k-900k",
+    "900k-1M",
+    "1M Above",
+]
 
-applicationDf['AMT_INCOME_RANGE']=pd.cut(applicationDf['AMT_INCOME_TOTAL'],bins,labels=slots)
+applicationDf["AMT_INCOME_RANGE"] = pd.cut(
+    applicationDf["AMT_INCOME_TOTAL"], bins, labels=slots
+)
 
 # Creating bins for Credit amount
-applicationDf['AMT_CREDIT']=applicationDf['AMT_CREDIT']/100000
+applicationDf["AMT_CREDIT"] = applicationDf["AMT_CREDIT"] / 100000
 
-bins = [0,1,2,3,4,5,6,7,8,9,10,100]
-slots = ['0-100K','100K-200K', '200k-300k','300k-400k','400k-500k','500k-600k','600k-700k','700k-800k',
-       '800k-900k','900k-1M', '1M Above']
+bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100]
+slots = [
+    "0-100K",
+    "100K-200K",
+    "200k-300k",
+    "300k-400k",
+    "400k-500k",
+    "500k-600k",
+    "600k-700k",
+    "700k-800k",
+    "800k-900k",
+    "900k-1M",
+    "1M Above",
+]
 
-applicationDf['AMT_CREDIT_RANGE']=pd.cut(applicationDf['AMT_CREDIT'],bins=bins,labels=slots)
+applicationDf["AMT_CREDIT_RANGE"] = pd.cut(
+    applicationDf["AMT_CREDIT"], bins=bins, labels=slots
+)
 
-#Converting object datatype columns into categorical columns
+# Converting object datatype columns into categorical columns
 applicationDf = convert_obj_to_cat(applicationDf)
 
 """ From EDA following decisions were made on previous application data.
@@ -132,17 +162,28 @@ applicationDf = convert_obj_to_cat(applicationDf)
     4. Convert object datatype columns into categorical columns.
 """
 unwanted_columns_previousDf = null_value_column_list(previousDf, 40) + [
-    'WEEKDAY_APPR_PROCESS_START','HOUR_APPR_PROCESS_START','FLAG_LAST_APPL_PER_CONTRACT','NFLAG_LAST_APPL_IN_DAY',
+    "WEEKDAY_APPR_PROCESS_START",
+    "HOUR_APPR_PROCESS_START",
+    "FLAG_LAST_APPL_PER_CONTRACT",
+    "NFLAG_LAST_APPL_IN_DAY",
 ]
 
 # Dropping unwanted columns from previous application dataset.
 previousDf.drop(labels=unwanted_columns_previousDf, axis=1, inplace=True)
 
-#Converting negative days to positive days 
-previousDf['DAYS_DECISION'] = abs(previousDf['DAYS_DECISION'])
+# Converting negative days to positive days
+previousDf["DAYS_DECISION"] = abs(previousDf["DAYS_DECISION"])
 
-#age group calculation e.g. 388 will be grouped as 300-400
-previousDf['DAYS_DECISION_GROUP'] = (previousDf['DAYS_DECISION']-(previousDf['DAYS_DECISION'] % 400)).astype(str)+'-'+ ((previousDf['DAYS_DECISION'] - (previousDf['DAYS_DECISION'] % 400)) + (previousDf['DAYS_DECISION'] % 400) + (400 - (previousDf['DAYS_DECISION'] % 400))).astype(str)
+# age group calculation e.g. 388 will be grouped as 300-400
+previousDf["DAYS_DECISION_GROUP"] = (
+    (previousDf["DAYS_DECISION"] - (previousDf["DAYS_DECISION"] % 400)).astype(str)
+    + "-"
+    + (
+        (previousDf["DAYS_DECISION"] - (previousDf["DAYS_DECISION"] % 400))
+        + (previousDf["DAYS_DECISION"] % 400)
+        + (400 - (previousDf["DAYS_DECISION"] % 400))
+    ).astype(str)
+)
 
-#Converting object datatype columns into categorical columns
+# Converting object datatype columns into categorical columns
 previousDf = convert_obj_to_cat(previousDf)
