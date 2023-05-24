@@ -1,6 +1,7 @@
 s3fs
 pytest
 pylint
+black
 ipython
 ipykernel
 pandas
