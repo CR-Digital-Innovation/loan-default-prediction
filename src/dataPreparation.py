@@ -33,6 +33,40 @@ def convert_obj_to_cat(df: pd.DataFrame) -> pd.DataFrame:
         df[col] = pd.Categorical(df[col])
     return df
 
+def handle_null_values (df: pd.DataFrame) -> pd.DataFrame:
+    """This functin takes the dataframe as input and imputes the null values in following ways:
+        A. For numerical category type columns:
+            1. If null value percentage is less than or equal to 15% then median() is used.
+            2. If null value is above 15% then mean() is used.
+        B. For Categorical type columns:
+            1. If null value percentage is less than or equal to 15% then mode() is applied.
+            2. If null value is above 15% then new "Unknown" category is created."""
+
+    null_percentages = df.isnull().sum() / df.shape[0] * 100.00
+
+    for column in df.columns:
+        if pd.api.types.is_numeric_dtype(df[column]):
+            # Numerical type column
+            null_percentage = null_percentages[column]
+            if null_percentage <= 15:
+                # Apply median if null percentage is less than or equal to 15%
+                df[column].fillna(df[column].median(), inplace=True)
+            else:
+                # Apply mean if null percentage is more than 15%
+                df[column].fillna(df[column].mean(), inplace=True)
+        elif pd.api.types.is_categorical_dtype(df[column]):
+            # Categorical type column
+            null_percentage = null_percentages[column]
+            if null_percentage <= 15:
+                # Apply mode if null percentage is less than or equal to 15%
+                df[column].fillna((df[column].mode()[0]),inplace = True)
+            else:
+                # Create an unknown category if null percentage is more than 15%
+                df[column] = df[column].cat.add_categories('Unknown')
+                df[column].fillna("Unknown", inplace=True)
+    
+    return df
+
 
 applicationDf = load_dataframe(DATASET_1)
 previousDf = load_dataframe(DATASET_2)
@@ -75,8 +109,7 @@ unwanted_columns_applicationDf = null_value_column_list(applicationDf, 40) + [
     "FLAG_EMAIL",
 ]
 
-# Dropping unwanted columns from application dataset.
-applicationDf.drop(labels=unwanted_columns_applicationDf, axis=1, inplace=True)
+
 
 """ Standardizing Values:
     1. Convert DAYS_EMPLOYED, DAYS_REGISTRATION,DAYS_ID_PUBLISH from negative to positive as days cannot be negative.
@@ -92,21 +125,12 @@ date_col = ["DAYS_BIRTH", "DAYS_EMPLOYED", "DAYS_REGISTRATION", "DAYS_ID_PUBLISH
 for col in date_col:
     applicationDf[col] = abs(applicationDf[col])
 
-# Creating bins for Age
+# Creating new column for Age
 applicationDf["AGE"] = applicationDf["DAYS_BIRTH"] // 365
-bins = [0, 20, 30, 40, 50, 100]
-slots = ["0-20", "20-30", "30-40", "40-50", "50 above"]
 
-applicationDf["AGE_GROUP"] = pd.cut(applicationDf["AGE"], bins=bins, labels=slots)
-
-# Creating bins for Employement Time
+# Creating new column for Employement Time
 applicationDf["YEARS_EMPLOYED"] = applicationDf["DAYS_EMPLOYED"] // 365
-bins = [0, 5, 10, 20, 30, 40, 50, 60, 150]
-slots = ["0-5", "5-10", "10-20", "20-30", "30-40", "40-50", "50-60", "60 above"]
 
-applicationDf["EMPLOYMENT_YEAR"] = pd.cut(
-    applicationDf["YEARS_EMPLOYED"], bins=bins, labels=slots
-)
 
 # Creating bins for income amount
 applicationDf["AMT_INCOME_TOTAL"] = applicationDf["AMT_INCOME_TOTAL"] / 100000
@@ -151,6 +175,11 @@ applicationDf["AMT_CREDIT_RANGE"] = pd.cut(
     applicationDf["AMT_CREDIT"], bins=bins, labels=slots
 )
 
+unwanted_columns_applicationDf = unwanted_columns_applicationDf + ["DAYS_BIRTH", "DAYS_EMPLOYED", "AMT_INCOME_TOTAL", "AMT_CREDIT"]
+
+# Dropping unwanted columns from application dataset.
+applicationDf.drop(labels=unwanted_columns_applicationDf, axis=1, inplace=True)
+
 # Converting object datatype columns into categorical columns
 applicationDf = convert_obj_to_cat(applicationDf)
 
@@ -168,9 +197,6 @@ unwanted_columns_previousDf = null_value_column_list(previousDf, 40) + [
     "NFLAG_LAST_APPL_IN_DAY",
 ]
 
-# Dropping unwanted columns from previous application dataset.
-previousDf.drop(labels=unwanted_columns_previousDf, axis=1, inplace=True)
-
 # Converting negative days to positive days
 previousDf["DAYS_DECISION"] = abs(previousDf["DAYS_DECISION"])
 
@@ -184,6 +210,12 @@ previousDf["DAYS_DECISION_GROUP"] = (
         + (400 - (previousDf["DAYS_DECISION"] % 400))
     ).astype(str)
 )
+
+
+unwanted_columns_previousDf = unwanted_columns_previousDf + ["DAYS_DECISION"]
+
+# Dropping unwanted columns from previous application dataset.
+previousDf.drop(labels=unwanted_columns_previousDf, axis=1, inplace=True)
 
 # Converting object datatype columns into categorical columns
 previousDf = convert_obj_to_cat(previousDf)
