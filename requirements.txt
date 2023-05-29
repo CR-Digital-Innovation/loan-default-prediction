@@ -11,3 +11,4 @@ nbval
 matplotlib
 seaborn
 python-dotenv
+scikit-learn
