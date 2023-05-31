@@ -1,13 +1,14 @@
 """Data Preparation functions to transform the data into required format for the Model training"""
+import argparse
 import pandas as pd
 from dataFunctions import (
     load_dataframe,
+    save_dataframe,
     null_value_column_list,
     convert_obj_to_cat,
     handle_null_values,
     label_encoding,
 )
-from sklearn.preprocessing import StandardScaler
 from globalVars import DATASET_1, DATASET_2
 
 # Load data into the dataframes
@@ -56,11 +57,10 @@ unwanted_columns_applicationDf = null_value_column_list(applicationDf, 40) + [
 """ Standardizing Values:
     1. DAYS_EMPLOYED column has 18% positive values but this variable measured in negative. Hence, these positive values are outliers. \
         Dropping these values is not a good choice. So, convert these positive values to '0' before standardizing.
-    2. Convert DAYS_EMPLOYED, DAYS_REGISTRATION, DAYS_ID_PUBLISH from negative to positive as days cannot be negative.
-    3. Convert DAYS_BIRTH from negative to positive values and calculate age and create categorical bins columns.
-    4. Categorize the amount variables into bins.
-    5. Categorize the Days of birth and employement into bins.
-    6. Convert object datatype columns into categorical columns.
+    2. Convert DAYS_EMPLOYED, DAYS_REGISTRATION, DAYS_ID_PUBLISH, DAYS_LAST_PHONE CHANGE from negative to positive as days cannot be negative.
+    3. Convert DAYS_BIRTH from negative to positive values and calculate age column.
+    4. Convert All days columns to Years.
+    5. Convert object datatype columns into categorical columns.
 """
 
 # Standardizing DAYS_EMPLOYED values
@@ -90,57 +90,8 @@ applicationDf["YEARS_LAST_PHONE_CHANGE"] = (
     applicationDf["DAYS_LAST_PHONE_CHANGE"] // 365
 )
 
-# Creating bins for income amount
-applicationDf["AMT_INCOME_TOTAL"] = applicationDf["AMT_INCOME_TOTAL"] / 100000
-bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-slots = [
-    "0-100K",
-    "100K-200K",
-    "200k-300k",
-    "300k-400k",
-    "400k-500k",
-    "500k-600k",
-    "600k-700k",
-    "700k-800k",
-    "800k-900k",
-    "900k-1M",
-    "1M Above",
-]
 
-applicationDf["AMT_INCOME_RANGE"] = pd.cut(
-    applicationDf["AMT_INCOME_TOTAL"], bins, labels=slots
-)
-
-# Creating bins for Credit amount
-applicationDf["AMT_CREDIT"] = applicationDf["AMT_CREDIT"] / 100000
-
-bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100]
-slots = [
-    "0-100K",
-    "100K-200K",
-    "200k-300k",
-    "300k-400k",
-    "400k-500k",
-    "500k-600k",
-    "600k-700k",
-    "700k-800k",
-    "800k-900k",
-    "900k-1M",
-    "1M Above",
-]
-
-applicationDf["AMT_CREDIT_RANGE"] = pd.cut(
-    applicationDf["AMT_CREDIT"], bins=bins, labels=slots
-)
-
-unwanted_columns_applicationDf = (
-    unwanted_columns_applicationDf
-    + date_col
-    + [
-        "AMT_INCOME_TOTAL",
-        "AMT_CREDIT",
-    ]
-)
+unwanted_columns_applicationDf = unwanted_columns_applicationDf + date_col
 
 # Dropping unwanted columns from application dataset.
 applicationDf.drop(labels=unwanted_columns_applicationDf, axis=1, inplace=True)
@@ -168,16 +119,8 @@ previousDf.loc[previousDf["SELLERPLACE_AREA"] < 0, "SELLERPLACE_AREA"] = 0
 # Converting negative days to positive days
 previousDf["DAYS_DECISION"] = abs(previousDf["DAYS_DECISION"])
 
-# age group calculation e.g. 388 will be grouped as 300-400
-previousDf["DAYS_DECISION_GROUP"] = (
-    (previousDf["DAYS_DECISION"] - (previousDf["DAYS_DECISION"] % 400)).astype(str)
-    + "-"
-    + (
-        (previousDf["DAYS_DECISION"] - (previousDf["DAYS_DECISION"] % 400))
-        + (previousDf["DAYS_DECISION"] % 400)
-        + (400 - (previousDf["DAYS_DECISION"] % 400))
-    ).astype(str)
-)
+# Convert DAYS_DECISION to YEARS_DECISION
+previousDf["YEARS_DECISION"] = previousDf["DAYS_DECISION"] // 365
 
 # Adding DAYS_DECISION to unwanted columns list
 unwanted_columns_previousDf = unwanted_columns_previousDf + ["DAYS_DECISION"]
@@ -204,6 +147,9 @@ previousDf["AMT_GOODS_PRICE"].fillna(
 )
 previousDf["CNT_PAYMENT"].fillna(0, inplace=True)
 
+# Imputing Null Values in previousDf
+previousDf = handle_null_values(previousDf)
+
 # Merge DataSet
 loan_process_df = pd.merge(applicationDf, previousDf, how="inner", on="SK_ID_CURR")
 # print("Shape of merged dataset:", loan_process_df.shape)
@@ -214,13 +160,30 @@ loan_process_df = label_encoding(loan_process_df)
 # Dropping SK_ID_CURR and SK_ID_PREV as they do not influence the Target variable
 loan_process_df.drop(labels=["SK_ID_CURR", "SK_ID_PREV"], axis=1, inplace=True)
 
-# Listing columns with unique values more than 500
-unique = loan_process_df.nunique()
 
-uniqueDf = pd.DataFrame(unique.reset_index())
-uniqueDf.columns = ["Column Name", "Unique Values"]
-unique_columns = uniqueDf[uniqueDf["Unique Values"] >= 500]["Column Name"].tolist()
+""" Provide --save flag to save the cleaned data as csv to s3 file store.
+    Optionally, you can provide a file name with --filename argument.
+    Ex:
+        python dataPreprocess.py --save --filename custom_data.csv
+"""
 
-# Applying Standard Scalar to the unique columns
-scaler = StandardScaler()
-loan_process_df[unique_columns] = scaler.fit_transform(loan_process_df[unique_columns])
+parser = argparse.ArgumentParser(description="Save DataFrame as CSV file")
+parser.add_argument("--save", action="store_true", help="Save DataFrame as CSV")
+parser.add_argument("--filename", type=str, help="Specify the filename (optional)")
+
+# Parse the command-line arguments
+args = parser.parse_args()
+
+# Check if the --save option is provided
+if args.save:
+    # Check if filename is provided, otherwise use default
+    filename = args.filename if args.filename else "clean_data.csv"
+
+    # Save DataFrame as CSV
+    saveFile = save_dataframe(filename, loan_process_df)
+    if saveFile:
+        print("DataFrame saved as ", filename)
+    else:
+        print("DataFrame was not saved")
+else:
+    print("No save option provided")

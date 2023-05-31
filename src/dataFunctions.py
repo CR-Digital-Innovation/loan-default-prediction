@@ -1,12 +1,15 @@
 """Function to load and pre process the data for model training"""
 import pandas as pd
+import s3fs
 from globalVars import (
     AWS_S3_BUCKET,
     AWS_S3_DATA_DIRECTORY,
+    AWS_S3_CLEAN_DATA_DIRECTORY,
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
 )
 from sklearn.preprocessing import LabelEncoder
+
 label_encoder = LabelEncoder()
 
 
@@ -21,6 +24,27 @@ def load_dataframe(fileName: str) -> pd.DataFrame:
         },
     )
     return dataframe
+
+
+def save_dataframe(fileName: str, df: pd.DataFrame) -> bool:
+    """Write a dataframe as csv file to the S3 storage"""
+
+    df.to_csv(
+        f"s3://{AWS_S3_BUCKET}/{AWS_S3_DATA_DIRECTORY}/{AWS_S3_CLEAN_DATA_DIRECTORY}/{fileName}",
+        index=False,
+        storage_options={
+            "key": AWS_ACCESS_KEY_ID,
+            "secret": AWS_SECRET_ACCESS_KEY,
+        },
+    )
+
+    # Check if file exists in AWS S3
+    s3 = s3fs.S3FileSystem(key=AWS_ACCESS_KEY_ID, secret=AWS_SECRET_ACCESS_KEY)
+    file_exists = s3.exists(
+        f"{AWS_S3_BUCKET}/{AWS_S3_DATA_DIRECTORY}/{AWS_S3_CLEAN_DATA_DIRECTORY}/{fileName}"
+    )
+
+    return file_exists
 
 
 def null_value_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -94,4 +118,3 @@ def label_encoding(df: pd.DataFrame) -> pd.DataFrame:
         if pd.api.types.is_categorical_dtype(df[column]):
             df[column] = label_encoder.fit_transform(df[column])
     return df
-
