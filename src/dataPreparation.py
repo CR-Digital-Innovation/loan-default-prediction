@@ -3,7 +3,6 @@ import argparse
 from sklearn.model_selection import train_test_split
 from globalVars import AWS_S3_CLEAN_DATA_DIRECTORY
 from dataFunctions import load_dataframe
-from dataPreprocess import loan_process_df
 from sklearn.preprocessing import StandardScaler
 
 
@@ -32,12 +31,13 @@ if args.load:
     clean_df = load_dataframe(filepath)
     print(f"DataFrame loaded from {filepath}:\n", clean_df.head())
 else:
+    from dataPreprocess import loan_process_df
     clean_df = loan_process_df
     print("No load option provided. Loaded dataframe from dataprocessing job.")
 
 # Split the data into features (X) and Target (y)
 # X, y = loan_process_df.drop(columns="TARGET").values, loan_process_df["TARGET"].values
-features, target = clean_df.drop(columns="TARGET"), loan_process_df["TARGET"]
+features, target = clean_df.drop(columns="TARGET"), clean_df["TARGET"]
 
 # Scaling the training set before splitting the data
 scaler = StandardScaler()
