@@ -13,11 +13,14 @@ from sklearn.preprocessing import LabelEncoder
 label_encoder = LabelEncoder()
 
 
-def load_dataframe(fileName: str) -> pd.DataFrame:
+def load_dataframe_s3(fileName: str) -> pd.DataFrame:
     """Loading csv file that is present in AWS S3 Bucket as dataframe using Pandas"""
 
+    # s3 Path
+    s3_path = f"s3://{AWS_S3_BUCKET}/{AWS_S3_DATA_DIRECTORY}/{fileName}"
+
     dataframe = pd.read_csv(
-        f"s3://{AWS_S3_BUCKET}/{AWS_S3_DATA_DIRECTORY}/{fileName}",
+        s3_path,
         storage_options={
             "key": AWS_ACCESS_KEY_ID,
             "secret": AWS_SECRET_ACCESS_KEY,
@@ -26,11 +29,14 @@ def load_dataframe(fileName: str) -> pd.DataFrame:
     return dataframe
 
 
-def save_dataframe(fileName: str, df: pd.DataFrame) -> bool:
+def save_dataframe_s3(fileName: str, df: pd.DataFrame) -> bool:
     """Write a dataframe as csv file to the S3 storage"""
 
+    # s3 Path
+    s3_path = f"s3://{AWS_S3_BUCKET}/{AWS_S3_DATA_DIRECTORY}/{fileName}"
+
     df.to_csv(
-        f"s3://{AWS_S3_BUCKET}/{AWS_S3_DATA_DIRECTORY}/{AWS_S3_CLEAN_DATA_DIRECTORY}/{fileName}",
+        s3_path,
         index=False,
         storage_options={
             "key": AWS_ACCESS_KEY_ID,
@@ -40,11 +46,29 @@ def save_dataframe(fileName: str, df: pd.DataFrame) -> bool:
 
     # Check if file exists in AWS S3
     s3 = s3fs.S3FileSystem(key=AWS_ACCESS_KEY_ID, secret=AWS_SECRET_ACCESS_KEY)
-    file_exists = s3.exists(
-        f"{AWS_S3_BUCKET}/{AWS_S3_DATA_DIRECTORY}/{AWS_S3_CLEAN_DATA_DIRECTORY}/{fileName}"
-    )
-
+    file_exists = s3.exists(s3_path)
     return file_exists
+
+
+def load_clean_data_s3(
+    load: bool = False, filename: str = "clean_data.csv"
+) -> pd.DataFrame:
+    """Function to load clean data from s3 as dataframe if args are passed to load else it loads the dataframe by running the data preprocess job."""
+
+    # Check if the --load option is provided
+    if load:
+        # Create filepath
+        filepath = AWS_S3_CLEAN_DATA_DIRECTORY + "/" + filename
+
+        # Read CSV file into DataFrame
+        clean_df = load_dataframe_s3(filepath)
+        print(f"DataFrame loaded from {filepath}:\n", clean_df.head())
+    else:
+        from dataPreprocess import loan_process_df
+
+        clean_df = loan_process_df
+        print("No load option provided. Loaded dataframe from dataprocessing job.")
+    return clean_df
 
 
 def null_value_df(df: pd.DataFrame) -> pd.DataFrame:

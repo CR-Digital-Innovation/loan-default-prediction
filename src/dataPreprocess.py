@@ -2,18 +2,18 @@
 import argparse
 import pandas as pd
 from dataFunctions import (
-    load_dataframe,
-    save_dataframe,
+    load_dataframe_s3,
+    save_dataframe_s3,
     null_value_column_list,
     convert_obj_to_cat,
     handle_null_values,
     label_encoding,
 )
-from globalVars import DATASET_1, DATASET_2
+from globalVars import DATASET_1, DATASET_2, AWS_S3_CLEAN_DATA_DIRECTORY
 
 # Load data into the dataframes
-applicationDf = load_dataframe(DATASET_1)
-previousDf = load_dataframe(DATASET_2)
+applicationDf = load_dataframe_s3(DATASET_1)
+previousDf = load_dataframe_s3(DATASET_2)
 
 """ From EDA following decisions were made on application data. \
     1. Columns with Null values greater than or equal to 40 percentage can be dropped.
@@ -179,10 +179,13 @@ if args.save:
     # Check if filename is provided, otherwise use default
     filename = args.filename if args.filename else "clean_data.csv"
 
+    # Create filepath
+    filepath = AWS_S3_CLEAN_DATA_DIRECTORY + "/" + filename
+
     # Save DataFrame as CSV
-    saveFile = save_dataframe(filename, loan_process_df)
+    saveFile = save_dataframe_s3(filepath, loan_process_df)
     if saveFile:
-        print("DataFrame saved as ", filename)
+        print("DataFrame saved as ", filepath)
     else:
         print("DataFrame was not saved")
 else:
