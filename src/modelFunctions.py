@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import Tuple
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
@@ -15,7 +15,7 @@ from sklearn.metrics import (
 
 
 def data_split(
-    df: pd.Dataframe, target_column: str, test_size: float = 0.2, random_state: int = 42
+    df: pd.DataFrame, target_column: str, test_size: float = 0.2, random_state: int = 42
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Function to split the data into train and test samples"""
 
@@ -30,46 +30,25 @@ def data_split(
     return X_train, X_test, y_train, y_test
 
 
-def train_model(X, y):
+def train_model(X, y, n):
     """Function to train the Random Forest Classifier model with cleaned data using Grid Search Cross Validation to find the best model and accuracy."""
 
     # Create a Pipeline
     pipeline = Pipeline(
         [
             ("scaler", StandardScaler()),  # Apply StandardScaler
-            ("classifier", RandomForestClassifier()),  # Random Forest Classifier
+            ("classifier", RandomForestClassifier(n_jobs=-1)),  # Random Forest Classifier
         ]
     )
 
-    # Define hyperparametes for tuning the model
-    param_grid = {
-        "max_depth": [None, 10, 20, 50, 100],  # Maximum number of levels in tree
-        "min_samples_split": [
-            2,
-            5,
-            10,
-        ],  # Minimum number of samples required to split an internal node
-        "min_samples_leaf": [
-            1,
-            2,
-            4,
-        ],  # Minimum number of samples required at each leaf node
-        "n_estimators": [50, 100, 200, 500],  # Number of trees in random forest
-        "n_jobs": -1,
-    }
+    # Create a KFold object for cross-validation
+    kf = KFold(n_splits=n, shuffle=True, random_state=42)
 
-    # Performing grid search cross-validation
-    grid_search = GridSearchCV(pipeline, param_grid=param_grid, cv=5)
-    grid_search.fit(X, y)
+    # Perform K-fold cross-validation
+    accuracy = cross_val_score(pipeline, X, y, cv=kf).mean()
+    pipeline.fit(X, y)
 
-    # Get the best model and it's score
-    best_model = grid_search.best_estimator_
-    best_score = grid_search.best_score_
-
-    # Print best score and best model
-    # print(f"Best Model: {best_model}, Best Score: {best_score}")
-
-    return best_model, best_score
+    return pipeline, accuracy
 
 
 def evaluate_model(model, X_test, y_test):
