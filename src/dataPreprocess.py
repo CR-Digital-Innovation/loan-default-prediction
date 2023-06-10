@@ -1,9 +1,12 @@
+""" Data Preprocess job"""
+
 import pandas as pd
 from utils.load_EnvVars import (
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
     AWS_S3_BUCKET,
     AWS_S3_DATA_DIRECTORY,
+    AWS_S3_DATA_DIRECTORY_RAW,
     AWS_S3_DATA_DIRECTORY_PROCESSED,
     APPLICATION_DATASET,
 )
@@ -19,7 +22,7 @@ from utils.data_Functions import (
 s3_utils = S3Utils(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET, AWS_S3_DATA_DIRECTORY)
 
 # Load data into a dataframe
-applicationDf = s3_utils.load_dataframe(APPLICATION_DATASET)
+applicationDf = s3_utils.load_dataframe(AWS_S3_DATA_DIRECTORY_RAW, APPLICATION_DATASET)
 
 """ From EDA following decisions were made on application data. \
     1. Columns with Null values greater than or equal to 40 percentage can be dropped.
@@ -31,7 +34,7 @@ applicationDf = s3_utils.load_dataframe(APPLICATION_DATASET)
     5. Drop unnecessary columns such as 'WEEKDAY_APPR_PROCESS_START','HOUR_APPR_PROCESS_START', \
         'FLAG_LAST_APPL_PER_CONTRACT','NFLAG_LAST_APPL_IN_DAY'.
 """
-unwanted_columns_applicationDf = null_value_column_list(applicationDf, 35) + [
+unwanted_columns = null_value_column_list(applicationDf, 35) + [
     "EXT_SOURCE_2",
     "EXT_SOURCE_3",
     "FLAG_DOCUMENT_2",
@@ -67,15 +70,6 @@ unwanted_columns_applicationDf = null_value_column_list(applicationDf, 35) + [
     "NFLAG_LAST_APPL_IN_DAY",
     "SK_ID_CURR",
     "SK_ID_PREV",
-]
-
-date_columns = [
-    "DAYS_BIRTH",
-    "DAYS_EMPLOYED",
-    "DAYS_REGISTRATION",
-    "DAYS_ID_PUBLISH",
-    "DAYS_LAST_PHONE_CHANGE",
-    "DAYS_DECISION",
 ]
 
 scale_columns = [
@@ -136,10 +130,10 @@ if __name__ == '__main__':
     applicationDf = custom_standardization(applicationDf)
 
     # Execute the data preprocess pipeline to return the data preprocess pipeline binary and list of remaining columns
-    preprocessing_pipeline, columns = preprocess_data(applicationDf, unwanted_columns_applicationDf, date_columns, scale_columns)
+    preprocessing_pipeline, columns = preprocess_data(applicationDf, unwanted_columns, date_columns, scale_columns)
 
     # Apply the preprocessing pipeline to the dataframe
-    data_transform_pipeline = preprocessing_pipeline.fit_transform()
+    data_transform_pipeline = preprocessing_pipeline.fit_transform(applicationDf)
 
     # Create a DataFrame from the transformed data
     transformed_df = pd.DataFrame(
