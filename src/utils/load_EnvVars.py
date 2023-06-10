@@ -1,3 +1,4 @@
+# pylint: disable=W0105
 """A simple utility to load all the variables from .env file make them available as global variables"""
 
 from dotenv import dotenv_values

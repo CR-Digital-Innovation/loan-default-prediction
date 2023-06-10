@@ -1,3 +1,4 @@
+# pylint: disable=W0105
 """ Data Preprocess job"""
 
 import pandas as pd
@@ -13,13 +14,14 @@ from utils.load_EnvVars import (
 from utils.s3_Functions import S3Utils
 from utils.data_Functions import (
     null_value_column_list,
-    custom_standardization,
     preprocess_data,
 )
 
 
 # Create an instance of S3Utils class to access various methods
-s3_utils = S3Utils(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET, AWS_S3_DATA_DIRECTORY)
+s3_utils = S3Utils(
+    AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET, AWS_S3_DATA_DIRECTORY
+)
 
 # Load data into a dataframe
 applicationDf = s3_utils.load_dataframe(AWS_S3_DATA_DIRECTORY_RAW, APPLICATION_DATASET)
@@ -100,57 +102,63 @@ scale_columns = [
     "CNT_PAYMENT",
 ]
 
-if __name__ == '__main__':
-    """ Save processed dataframe to either csv or as a pickle file when needed
+if __name__ == "__main__":
+    """Save processed dataframe to either csv or as a pickle file when needed
 
-        To save the processed dataframe as csv file:
-            1. Provide --save-to-csv flag.
-            2. Optionally, you can parse a filename with --filename argument.
-            Ex:
-                python dataPreprrocess.py --save-to-csv --filename 'processed_data'
+    To save the processed dataframe as csv file:
+        1. Provide --save-to-csv flag.
+        2. Optionally, you can parse a filename with --filename argument.
+        Ex:
+            python dataPreprrocess.py --save-to-csv --filename 'processed_data'
 
-        To save the processed dataframe as a pickle file:
-            1. Provide --save-to-pkl flag.
-            2. Optionally, you can parse a filename with --filename argument.
-            Ex:
-                python dataPreprocess.py --save-to-pkl --filename 'processed_data'
+    To save the processed dataframe as a pickle file:
+        1. Provide --save-to-pkl flag.
+        2. Optionally, you can parse a filename with --filename argument.
+        Ex:
+            python dataPreprocess.py --save-to-pkl --filename 'processed_data'
     """
 
     import argparse
 
-    parser = argparse.ArgumentParser(description="Save the processed dataframe to S3 storage")
-    parser.add_argument("--save-to-csv", action="store_true", help="Save DataFrame as CSV")
-    parser.add_argument("--save-to-pkl", action="store_true", help="Save DataFrame as Pickle file")
+    parser = argparse.ArgumentParser(
+        description="Save the processed dataframe to S3 storage"
+    )
+    parser.add_argument(
+        "--save-to-csv", action="store_true", help="Save DataFrame as CSV"
+    )
+    parser.add_argument(
+        "--save-to-pkl", action="store_true", help="Save DataFrame as Pickle file"
+    )
     parser.add_argument("--filename", type=str, help="Specify the filename (optional)")
 
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # Apply custom standardizations to the desired columns
-    applicationDf = custom_standardization(applicationDf)
-
     # Execute the data preprocess pipeline to return the data preprocess pipeline binary and list of remaining columns
-    preprocessing_pipeline, columns = preprocess_data(applicationDf, unwanted_columns, date_columns, scale_columns)
+    preprocessing_pipeline, columns = preprocess_data(
+        applicationDf, unwanted_columns, scale_columns
+    )
 
     # Apply the preprocessing pipeline to the dataframe
     data_transform_pipeline = preprocessing_pipeline.fit_transform(applicationDf)
 
     # Create a DataFrame from the transformed data
-    transformed_df = pd.DataFrame(
-        data_transform_pipeline,
-        columns=columns
-    )
+    transformed_df = pd.DataFrame(data_transform_pipeline, columns=columns)
 
     if args.save_to_csv:
         # Check if filename is provided, otherwise use default
         filename = f"{args.filename}.csv" if args.filename else "processed_data.csv"
 
         # Save dataframe as CSV file
-        s3_utils.save_dataframe(AWS_S3_DATA_DIRECTORY_PROCESSED, filename, transformed_df)
-    
+        s3_utils.save_dataframe(
+            AWS_S3_DATA_DIRECTORY_PROCESSED, filename, transformed_df
+        )
+
     if args.save_to_pkl:
         # Check if filename is provided, otherwise use default
         filename = f"{args.filename}.pkl" if args.filename else "processed_data.pkl"
 
         # Save dataframe as Pickle file
-        s3_utils.save_pickle(AWS_S3_DATA_DIRECTORY_PROCESSED, filename, data_transform_pipeline)
+        s3_utils.save_pickle(
+            AWS_S3_DATA_DIRECTORY_PROCESSED, filename, data_transform_pipeline
+        )
