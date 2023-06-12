@@ -2,14 +2,9 @@ s3fs
 pytest
 pylint
 black
-ipython
-ipykernel
 pandas
-numpy
-pyyaml
-nbval
-matplotlib
-seaborn
 python-dotenv
 scikit-learn
-xgboost
+fastapi
+pydantic
+uvicorn
