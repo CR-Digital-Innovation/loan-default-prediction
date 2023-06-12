@@ -2,7 +2,7 @@
 
 import pandas as pd
 from typing import Tuple
-from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import (
@@ -14,7 +14,7 @@ from sklearn.metrics import (
 
 def split_data(
     df: pd.DataFrame, target_column: str, test_size: float = 0.2, random_state: int = 42
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Function to split the data into train and test samples"""
 
     # Split the features and target variables
@@ -25,7 +25,7 @@ def split_data(
         X, y, test_size=test_size, random_state=random_state
     )
 
-    return X_train, X_test, y_train, y_test
+    return X, y, X_train, X_test, y_train, y_test
 
 
 def train_model(data_pipeline: any, X: pd.DataFrame, y: pd.DataFrame, n: int=5):
@@ -39,14 +39,10 @@ def train_model(data_pipeline: any, X: pd.DataFrame, y: pd.DataFrame, n: int=5):
         ]
     )
 
-    # Create a KFold object for cross-validation
-    kf = KFold(n_splits=n, shuffle=True, random_state=42)
-
-    # Perform K-fold cross-validation
-    accuracy = cross_val_score(model_pipeline, X, y, cv=kf).mean()
+    # Fitting training data to the model pipeline
     model_pipeline.fit(X, y)
 
-    return model_pipeline, accuracy
+    return model_pipeline
 
 
 def evaluate_model(model, X_test, y_test):

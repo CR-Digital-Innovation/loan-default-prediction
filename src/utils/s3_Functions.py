@@ -45,7 +45,7 @@ class S3Utils:
                 df.to_csv(file, index=False)
 
             # Check if file is saved in S3 bucket, return success if exists.
-            file_exists = self.s3_session(file_path)
+            file_exists = self.s3_session.exists(file_path)
             if file_exists:
                 print(f"csv file '{fileName}' is saved to S3 successfully.")
         except Exception as e:
@@ -61,7 +61,7 @@ class S3Utils:
                 joblib.dump(data, file)
 
             # Check if file is saved in S3 bucket, return success if exists.
-            file_exists = self.s3_session(file_path)
+            file_exists = self.s3_session.exists(file_path)
             if file_exists:
                 print(f"Pickle file '{fileName}' saved to S3 successfully.")
         except Exception as e:
@@ -79,3 +79,20 @@ class S3Utils:
         except Exception as e:
             print(f"Error loading pickle file from S3 storage: {e}")
             return None
+
+    def check_file_exist(self, dirPath: str, fileName: str) -> bool:
+        """Function to check if a file exist in given path in S3"""
+
+        try:
+            file_path = self.get_s3_path(dirPath, fileName)
+            print(f"Checking for the file {file_path}")
+            
+            # Checking the file
+            file_exist = self.s3_session.exists(file_path)
+            if file_exist:
+                print(f"File {file_path} exist")
+            else:
+                print(f"File {file_path} does not exist")
+            return file_exist
+        except Exception as e:
+            print(f"Error checking the file in S3: {e}")

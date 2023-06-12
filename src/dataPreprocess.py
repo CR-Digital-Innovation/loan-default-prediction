@@ -24,6 +24,7 @@ s3_utils = S3Utils(
 )
 
 # Load data into a dataframe
+print("---------------------- DATA INGESTING ----------------------")
 applicationDf = s3_utils.load_dataframe(AWS_S3_DATA_DIRECTORY_RAW, APPLICATION_DATASET)
 
 """ From EDA following decisions were made on application data. \

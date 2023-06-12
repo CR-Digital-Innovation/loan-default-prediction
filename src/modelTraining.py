@@ -1,26 +1,52 @@
+# pylint: disable=W0105
 """Model Training and evaluation Job"""
 
-from utils.load_EnvVars import AWS_S3_DATA_DIRECTORY_MODELS
+from utils.load_EnvVars import AWS_S3_DATA_DIRECTORY_MODELS, MODEL_NAME, MODEL_VERSION
 from dataPreprocess import applicationDf, unwanted_columns, scale_columns, s3_utils
 from utils.model_Functions import split_data, train_model, evaluate_model
 from utils.data_Functions import preprocess_data
 
 
 # Split the data into train and test samples
-X_train, X_test, y_train, y_test = split_data(applicationDf, "TARGET")
+print("---------------------- SPLITTING TRAIN AND TEST SAMPLES ----------------------")
+X, y, X_train, X_test, y_train, y_test = split_data(applicationDf, "TARGET")
 
 # Capture the data preprocessing parameters
-preprocessing_pipeline, columns = preprocess_data(applicationDf, unwanted_columns, scale_columns)
+print("---------------------- DATA PREPROCESSING ----------------------")
+preprocessing_pipeline, columns = preprocess_data(X, unwanted_columns, scale_columns)
 
 # Train the model
-model, accuracy = train_model(preprocessing_pipeline, X_train, y_train)
-print(f"Best Model: {model},\nBest Score: {accuracy}")
+print("---------------------- MODEL TRAINING ----------------------")
+model= train_model(preprocessing_pipeline, X_train, y_train)
 
 # Evaluate the model
+print("---------------------- MODEL EVALUATING ----------------------")
 evaluate_model(model, X_test, y_test)
 
-# Save the model
-# Create an instance of S3Utils class to access various methods
-s3_utils.save_pickle(
-            AWS_S3_DATA_DIRECTORY_MODELS, "best_rf_model.pkl", model
-        )
+
+if __name__ == "__main__":
+    """Save the model to S3 with your desired file name else will be saved with default name 
+
+    To save the model as a pickle file with your choice of file name provide the --filename flag followed by your filename
+        Ex:
+            python modelTraining.py --filename 'processed_data'
+    """
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Save the model to S3 storage with cutsom filename"
+    )
+    parser.add_argument("--filename", type=str, help="Specify the filename (optional)")
+
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Check if filename is provided, otherwise use default
+    filename = f"{args.filename}.pkl" if args.filename else f"{MODEL_NAME}_{MODEL_VERSION}.pkl"
+
+    # Save the model
+    print("---------------------- SAVING THE MODEL TO S3 ----------------------")
+    s3_utils.save_pickle(
+                AWS_S3_DATA_DIRECTORY_MODELS, filename, model
+            )
