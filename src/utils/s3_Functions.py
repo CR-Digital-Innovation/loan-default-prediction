@@ -6,8 +6,7 @@ import joblib
 from tqdm import tqdm
 
 
-
-
+# Define a custom S3Utils class for S3 functions
 class S3Utils:
     def __init__(
         self, aws_access_key: str, aws_secret_key: str, bucket_name: str, data_dir: str
@@ -22,8 +21,15 @@ class S3Utils:
 
     def get_s3_path(self, dirPath: str, fileName: str) -> str:
         """Simple function to return an S3 Path"""
+        
         path = f"s3://{self.bucket_name}/{self.data_dir}/{dirPath}/{fileName}"
         return path
+    
+    def get_file_size(self, filePath: str) -> int:
+        """Function to get the file size of a file in S3"""
+
+        file_info = self.s3_session.info(filePath)
+        return file_info['size']
 
     def load_dataframe(self, dirPath: str, fileName: str) -> pd.DataFrame:
         """Function to load csv/tsv file from AWS S3 bucket and retun a pandas dataframe"""
@@ -78,14 +84,25 @@ class S3Utils:
             print(f"Loading pickle file from '{file_path}'")
 
             # Get the size of the file
-            file_info = self.s3_session.info(file_path)
-            file_size = file_info['size']
+            #file_size = self.get_file_size(file_path)
 
-            with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, desc='Downloading') as pbar:
-                def progress_callback(bytes_transferred):
-                    pbar.update(bytes_transferred - pbar.n)
-                with self.s3_session.open(file_path, "rb", callback=progress_callback) as file:
-                    data = joblib.load(file)
+            # Define a custom block size for reading the file
+            block_size = 8192
+
+            progress_bar = tqdm(total=self.get_file_size(file_path), unit='B', unit_scale=True, unit_divisor=1024, desc='Loading')
+
+            # Open the file using the custom BlockReader and load with joblib
+            with self.s3_session.open(file_path, "rb",) as file:
+
+                chunks = []
+                while True:
+                    chunk = file.read(block_size)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                    progress_bar.update(len(chunk))
+                
+            data = joblib.load(b''.join(chunks))
             return data
         except Exception as e:
             print(f"Error loading pickle file from S3 storage: {e}")
