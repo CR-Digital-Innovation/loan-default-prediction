@@ -3,6 +3,9 @@
 import s3fs
 import pandas as pd
 import joblib
+from tqdm import tqdm
+
+
 
 
 class S3Utils:
@@ -73,8 +76,16 @@ class S3Utils:
         try:
             file_path = self.get_s3_path(dirPath, fileName)
             print(f"Loading pickle file from '{file_path}'")
-            with self.s3_session.open(file_path, "rb") as file:
-                data = joblib.load(file)
+
+            # Get the size of the file
+            file_info = self.s3_session.info(file_path)
+            file_size = file_info['size']
+
+            with tqdm(total=file_size, unit='B', unit_scale=True, unit_divisor=1024, desc='Downloading') as pbar:
+                def progress_callback(bytes_transferred):
+                    pbar.update(bytes_transferred - pbar.n)
+                with self.s3_session.open(file_path, "rb", callback=progress_callback) as file:
+                    data = joblib.load(file)
             return data
         except Exception as e:
             print(f"Error loading pickle file from S3 storage: {e}")
