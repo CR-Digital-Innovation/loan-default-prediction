@@ -1,8 +1,10 @@
 """Useful S3 operations to perform various operations involves with csv files, data frames, pickle files using s3fs library"""
 
+import io
 import s3fs
 import pandas as pd
 import joblib
+import gzip
 from tqdm import tqdm
 
 
@@ -37,8 +39,26 @@ class S3Utils:
         try:
             file_path = self.get_s3_path(dirPath, fileName)
             print(f"Loading '{file_path}' file as dataframe.")
-            with self.s3_session.open(file_path, "rb") as file:
-                dataframe = pd.read_csv(file)
+
+            # Define a custom block size for reading the file
+            block_size = 8192
+
+            progress_bar = tqdm(total=self.get_file_size(file_path), unit='B', unit_scale=True, unit_divisor=1024, desc='Loading')
+
+            # Open the file using the custom BlockReader and load with joblib
+            with self.s3_session.open(file_path, "rb",) as file:
+                chunks = []
+                while True:
+                    chunk = file.read(block_size)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                    progress_bar.update(len(chunk))
+                
+            progress_bar.close()
+            
+            csv_data = b"".join(chunks).decode()
+            dataframe = pd.read_csv(io.StringIO(csv_data))
             return dataframe
         except Exception as e:
             print(f"Error reading csv data as dataframe from S3: {e}")
@@ -60,14 +80,21 @@ class S3Utils:
         except Exception as e:
             print(f"Error saving dataframe as csv to S3: {e}")
 
-    def save_pickle(self, dirPath: str, fileName: str, data: any) -> None:
+    def save_pickle(self, dirPath: str, fileName: str, data: any, compress: bool=True) -> None:
         """Function to save pickle file to S3 storage using joblib"""
 
         try:
+            fileName = f"{fileName}.gz" if compress else fileName
             file_path = self.get_s3_path(dirPath, fileName)
             print(f"Saving pickle file '{fileName}' at '{file_path}'")
-            with self.s3_session.open(file_path, "wb") as file:
-                joblib.dump(data, file)
+
+            if compress:
+                with self.s3_session.open(file_path, "wb") as file:
+                    with gzip.GzipFile(fileobj=file, mode='wb', compresslevel=6) as gz_file:
+                        joblib.dump(data, gz_file)
+            else:
+                with self.s3_session.open(file_path, "wb") as file:
+                    joblib.dump(data, file)
 
             # Check if file is saved in S3 bucket, return success if exists.
             file_exists = self.s3_session.exists(file_path)
@@ -76,15 +103,13 @@ class S3Utils:
         except Exception as e:
             print(f"Error saving pickle file to S3: {e}")
 
-    def load_pickle(self, dirPath: str, fileName: str) -> any:
+    def load_pickle(self, dirPath: str, fileName: str, compressed: bool=True) -> any:
         """Function to load pickel file from S3 storage using joblib"""
 
         try:
+            fileName = f"{fileName}.gz" if compressed else fileName
             file_path = self.get_s3_path(dirPath, fileName)
             print(f"Loading pickle file from '{file_path}'")
-
-            # Get the size of the file
-            #file_size = self.get_file_size(file_path)
 
             # Define a custom block size for reading the file
             block_size = 8192
@@ -93,7 +118,6 @@ class S3Utils:
 
             # Open the file using the custom BlockReader and load with joblib
             with self.s3_session.open(file_path, "rb",) as file:
-
                 chunks = []
                 while True:
                     chunk = file.read(block_size)
@@ -102,7 +126,15 @@ class S3Utils:
                     chunks.append(chunk)
                     progress_bar.update(len(chunk))
                 
-            data = joblib.load(b''.join(chunks))
+            progress_bar.close()
+
+            file_obj = b''.join(chunks)
+
+            if compressed:
+                with gzip.GzipFile(fileobj=io.BytesIO(file_obj), mode='rb') as gz_file:
+                    data = joblib.load(gz_file)
+            else:
+                data = joblib.load(io.BytesIO(file_obj))
             return data
         except Exception as e:
             print(f"Error loading pickle file from S3 storage: {e}")

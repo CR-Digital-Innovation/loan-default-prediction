@@ -59,5 +59,5 @@ if __name__ == "__main__":
     # Save the model
     print("---------------------- SAVING THE MODEL TO S3 ----------------------")
     s3_utils.save_pickle(
-                AWS_S3_DATA_DIRECTORY_MODELS, filename, model
+                AWS_S3_DATA_DIRECTORY_MODELS, filename, model,
             )

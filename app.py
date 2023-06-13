@@ -34,7 +34,7 @@ class ModelWrapper:
         #filename = f"{MODEL_NAME}_{MODEL_VERSION}.pkl"
 
         # Loading the model from S3
-        self.model = s3_utils.load_pickle(dirPath, fileName)      
+        self.model = s3_utils.load_pickle(dirPath, fileName, compressed=True)      
 
     def predict(self, data):
         return self.model.predict(data)
