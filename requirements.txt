@@ -10,3 +10,5 @@ pydantic
 uvicorn
 python-multipart
 tqdm
+streamlit
+requests
