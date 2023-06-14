@@ -1,12 +1,10 @@
 # pylint: disable=W0105
 """FAST API modules to load the pickle file and make predictions"""
 
-# Append the root path to the src folder, so that detect the utils modules
 import sys
-sys.path.append('src')
-
 import os
 import pandas as pd
+
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel, Field
 from src.utils.s3_Functions import S3Utils
@@ -20,6 +18,9 @@ from src.utils.load_EnvVars import (
     MODEL_VERSION,
 )
 
+# Append the root path to the src folder, so that detect the utils modules
+sys.path.append('src')
+
 # Create an instance of S3Utils class to access various methods
 s3_utils = S3Utils(
     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET, AWS_S3_DATA_DIRECTORY
@@ -30,7 +31,7 @@ class ModelWrapper:
     def __init__(self, dirPath: str, fileName: str):
         """Load model from S3"""
 
-        # Defining the file name 
+        # Defining the file name
         #filename = f"{MODEL_NAME}_{MODEL_VERSION}.pkl"
 
         # Loading the model from S3
@@ -41,6 +42,14 @@ class ModelWrapper:
     
     def predict_proba(self, data):
         return self.model.predict_proba(data)
+
+# Define Request Models
+class PredictionRequest(BaseModel):
+    file: UploadFile
+
+class PredictionResult(BaseModel):
+    predictions: list[str]
+    probabilities: list[list[float]]
 
 # Create the FastAPI app
 app = FastAPI(swagger_ui_parameters={'syntaxHighlight': False})
@@ -75,3 +84,20 @@ async def create_upload_file(file: UploadFile = File(...)):
         # Raise a HTTP 400 Exception, indicating Bad Request 
         # (you can learn more about HTTP response status codes here)
         raise HTTPException(status_code=400, detail="Invalid file format. Only CSV Files accepted.")
+
+# Prediction endpoint
+@app.post("/predict")
+async def predict_csv_file(request: PredictionRequest):
+    df = pd.read_csv(request.file.file)
+
+    if "TARGET" in df.columns:
+        df.drop("TARGET", axis=1, inplace=True)
+
+    # Make predictions and determine prediction probabilities
+    predictions = model_wrapper.predict(df)
+    probabilities = model_wrapper.predict_proba(df)
+
+    # Prepare Response Data
+    result = PredictionResult(predictions=predictions.tolist(), probabilities=probabilities.tolist())
+
+    return result

@@ -2,46 +2,51 @@ import streamlit as st
 import pandas as pd
 import requests
 
-# Streamlit App
-st.title("CSV File Predictor")
-st.write("Upload a CSV file to get predictions")
+# Constants
+API_URL = "https://saishivacr-cuddly-space-guide-xggj4x7r7xwf99r5-8000.preview.app.github.dev/predict"  # Update with your FAST API endpoint URL
+MAX_FILE_SIZE = 10  # Maximum file size in MB
 
-# Upload CSV File
-uploaded_file = st.file_uploader("Upload CSV", type="csv")
+# Streamlit configuration
+st.set_page_config(page_title="CSV Predictor", page_icon="🔮", layout="centered")
 
-if uploaded_file is not None:
-    # Read CSV File
-    df = pd.read_csv(uploaded_file)
 
-    # Display CSV Data
-    st.write("Uploaded CSV Data:")
-    st.dataframe(df)
+def main():
+    # Header
+    st.header("CSV Predictor")
+    st.subheader("Upload a CSV file and get predictions")
 
-    # Send CSV Data to FastAPI for Prediction
-    if st.button("Predict"):
-        # Prepare Data for Request
-        csv_data = df.to_csv(index=False)
-        files = {"file": ("data.csv", csv_data)}
+    # Upload CSV file
+    uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+    if uploaded_file:
+        # Read CSV file
+        df = pd.read_csv(uploaded_file)
 
-        # Make POST Request to FastAPI
-        response = requests.post("http://localhost:8000/predict", files=files)
+        # Show CSV data as table
+        st.subheader("CSV Data")
+        st.write(df)
 
-        if response.status_code == 200:
-            # Parse Response Data
-            result = response.json()
+        # Predict button
+        if st.button("Predict"):
+            # Prepare data for API request
+            payload = df.to_json()
 
-            # Display Predictions
-            st.write("Predictions:")
-            predictions = result["predictions"]
-            probabilities = result["probabilities"]
-            prediction_df = pd.DataFrame(
-                {
-                    "CSV Column": df.iloc[:, 0],  # First column of the CSV
-                    "Prediction": predictions,
-                    "Probability (Class 0)": [p[0] for p in probabilities],
-                    "Probability (Class 1)": [p[1] for p in probabilities],
-                }
-            )
-            st.dataframe(prediction_df)
-        else:
-            st.write("Error occurred during prediction.")
+            # Make API request to FAST API
+            response = requests.post(API_URL, json=payload)
+
+            # Process API response
+            if response.status_code == 200:
+                results = response.json()
+
+                # Display prediction results
+                st.subheader("Prediction Results")
+                st.table(results)
+            else:
+                st.error("Failed to retrieve prediction results. Please try again.")
+
+    # Footer
+    st.write("---")
+    st.text("Customizable footer note")
+
+
+if __name__ == "__main__":
+    main()
