@@ -1,6 +1,16 @@
 # pylint: disable=W0105
 """ Data Preprocess job"""
 
+import os
+import sys
+
+# Get the absolute path to the project root directory
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+# Add the project root directory to the PYTHONPATH
+sys.path.insert(0, project_root)
+
+
 import pandas as pd
 from utils.load_EnvVars import (
     AWS_ACCESS_KEY_ID,
