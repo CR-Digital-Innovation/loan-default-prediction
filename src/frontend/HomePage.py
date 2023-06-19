@@ -82,7 +82,38 @@ def predict_df(df: pd.DataFrame):
 
             predict_result_df = pd.DataFrame.from_dict(predict_results)
             #st.write(predict_results)
+
             return predict_result_df
+
+
+def get_prediction(row):
+    # Function to deterimine prediction category and confidence score
+    class_0_prob = row['Probability 0']
+    class_1_prob = row['Probability 1']
+
+    if class_1_prob < 0.4:
+        prediction = 'Repayer'
+        confidence_score = class_0_prob * 100
+    elif class_1_prob < 0.7:
+        prediction = 'Repayer with Risk'
+        confidence_score = max(class_0_prob, class_1_prob) * 100
+    else:
+        prediction = 'Defaulter'
+        confidence_score = class_1_prob * 100
+    
+    return prediction, confidence_score
+
+
+def highlight_prediction(value):
+
+    if value == 'Defaulter':
+        color = '#b92e36'
+    elif value == 'Repayer':
+        color = '#a3b966'
+    else:
+        color = '#eb9b56'
+
+    return f'background-color: {color}'
 
 
 def predict_csv(csv_data: list):
@@ -96,7 +127,17 @@ def predict_csv(csv_data: list):
 
         predict_result_df = pd.DataFrame.from_dict(predict_results)
         #st.write(predict_results)
-        return predict_result_df
+
+        # Apply transformation to create the new DataFrame
+        predict_result_df['Prediction'], predict_result_df['Confidence Score'] = zip(*predict_result_df.apply(get_prediction, axis=1))
+
+        # Select and reorder the desired columns
+        predict_desc_df = predict_result_df[['SK_ID_CURR', 'Prediction', 'Confidence Score']]
+
+        # Apply color style to specific column
+        predict_desc_styled_df = predict_desc_df.style.applymap(highlight_prediction, subset=['Prediction'])
+
+        return predict_desc_styled_df
         
 
 def main():

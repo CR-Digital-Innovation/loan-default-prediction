@@ -106,6 +106,8 @@ async def predict(payload: DataFramePayload):
             if "TARGET" in dataframe.columns:
                 dataframe.drop("TARGET", axis=1, inplace=True)
 
+            dataframe = dataframe.replace(to_replace={None: np.nan})
+
             predictions = model_wrapper.predict(dataframe)
             probabilities = model_wrapper.predict_proba(dataframe)
 
