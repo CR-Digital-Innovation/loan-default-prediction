@@ -8,13 +8,17 @@ import pandas as pd
 import json
 
 # Get the absolute path to the project root directory
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # Add the project root directory to the PYTHONPATH
-sys.path.insert(0, project_root)
+# sys.path.insert(0, project_root)
 
 # Importing required modules from utils
-from utils.load_EnvVars import BACKEND_HOST_URL
+# from utils.load_EnvVars import BACKEND_HOST_URL
+
+# Loading Backend Host URL from Env variable
+BACKEND_HOST_URL = os.getenv('BACKEND_HOST_URL')
+
 
 # Streamlit configuration
 st.set_page_config(page_title="Loan-default-risk-predictor", page_icon="⚙️", layout="wide",  menu_items={'About': "A simple interface to upload the application data as a csv file or paste in csv format and get predictions whether the applicant is a repayer or a defaulter."})
