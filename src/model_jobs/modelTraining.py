@@ -1,17 +1,6 @@
 # pylint: disable=W0105
 """Model Training and evaluation Job"""
 
-""" import os
-import sys
-
-# Get the root directory of your project
-root_directory = os.path.dirname(os.path.abspath(__file__))
-
-# Add the root directory to the Python path
-sys.path.append(root_directory)
-print(root_directory)
- """
-
 import os
 import sys
 

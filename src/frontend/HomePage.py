@@ -91,14 +91,14 @@ def get_prediction(row):
     class_0_prob = row['Probability 0']
     class_1_prob = row['Probability 1']
 
-    if class_1_prob < 0.4:
-        prediction = 'Repayer'
+    if class_1_prob <= 0.2:
+        prediction = 'Confirmed Repayer'
         confidence_score = class_0_prob * 100
     elif class_1_prob < 0.7:
-        prediction = 'Repayer with Risk'
+        prediction = 'Probable Defaulter'
         confidence_score = max(class_0_prob, class_1_prob) * 100
     else:
-        prediction = 'Defaulter'
+        prediction = 'Confirmed Defaulter'
         confidence_score = class_1_prob * 100
     
     return prediction, confidence_score
@@ -106,9 +106,9 @@ def get_prediction(row):
 
 def highlight_prediction(value):
 
-    if value == 'Defaulter':
+    if value == 'Confirmed Defaulter':
         color = '#b92e36'
-    elif value == 'Repayer':
+    elif value == 'Confirmed Repayer':
         color = '#a3b966'
     else:
         color = '#eb9b56'
@@ -126,7 +126,7 @@ def predict_csv(csv_data: list):
         predict_results = response.json()
 
         predict_result_df = pd.DataFrame.from_dict(predict_results)
-        #st.write(predict_results)
+        #st.write(predict_result_df)
 
         # Apply transformation to create the new DataFrame
         predict_result_df['Prediction'], predict_result_df['Confidence Score'] = zip(*predict_result_df.apply(get_prediction, axis=1))
@@ -142,8 +142,9 @@ def predict_csv(csv_data: list):
 
 def main():
     # Header
-    st.header("Loan Default Predictor")
-    st.subheader("Upload a application data in csv format and get predictions")
+    st.image("https://www.criticalriver.com/wp-content/uploads/2022/04/cr-logo-updated.png")
+    st.header("Loan Default Risk Predictor")
+    st.subheader("Upload the application data in csv format and get predictions")
 
     st.write("Select an option to either upload a csv file or paste data in csv format")
 
