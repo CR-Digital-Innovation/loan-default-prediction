@@ -4,7 +4,7 @@ FROM python:3.10-slim as base
 # WorkDir 
 WORKDIR /app
 # Copy requirements.txt file
-COPY frontend/requirements.txt .
+COPY backend/requirements.txt .
 # Install dependencies from requirements
 RUN python -m venv .venv && .venv/bin/pip install --no-cache-dir -U pip setuptools
 RUN .venv/bin/pip install --no-cache-dir -r requirements.txt && find /app/.venv \( -type d -a -name test -o -name tests \) -o \( -type f -a -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' \+
@@ -17,11 +17,14 @@ WORKDIR /app
 # Copy dependcies from base image
 COPY --from=base /app /app
 ENV PATH="/app/.venv/bin:$PATH"
-# Copy UI Files to app directory
-COPY frontend/*.py /app/
-# Define the Environment Variable for Backend API Host URL
-ENV BACKEND_HOST_URL="http://localhost:8000"
-# Expose default Streamlit UI port
-EXPOSE 8501
-# Run streamlit
-CMD ["streamlit", "run", "HomePage.py"]
+# Copy backend files to the working directory
+RUN mkdir backend utils
+COPY backend/*.py /app/backend/
+COPY backend/.env /app/
+# Copy Utils folder to working directory
+# RUN cd ../ && cp -r utils /app/
+COPY utils/*.py /app/utils/
+# Expose default port of FASTAPI
+EXPOSE 8000
+# Run FASTAPI Backend
+CMD ["python", "backend/server.py"]

@@ -1,15 +1,16 @@
 """Useful S3 operations to perform various operations involves with csv files, data frames, pickle files using s3fs library"""
-
 import io
+import gzip
 import s3fs
 import pandas as pd
 import joblib
-import gzip
 from tqdm import tqdm
 
 
 # Define a custom S3Utils class for S3 functions
 class S3Utils:
+    """A Class to define various methods for different S3 operations"""
+
     def __init__(
         self, aws_access_key: str, aws_secret_key: str, bucket_name: str, data_dir: str
     ) -> None:
@@ -23,10 +24,10 @@ class S3Utils:
 
     def get_s3_path(self, dirPath: str, fileName: str) -> str:
         """Simple function to return an S3 Path"""
-        
+
         path = f"s3://{self.bucket_name}/{self.data_dir}/{dirPath}/{fileName}"
         return path
-    
+
     def get_file_size(self, filePath: str) -> int:
         """Function to get the file size of a file in S3"""
 
@@ -43,7 +44,8 @@ class S3Utils:
             # Define a custom block size for reading the file
             block_size = 8192
 
-            progress_bar = tqdm(total=self.get_file_size(file_path), unit='B', unit_scale=True, unit_divisor=1024, desc='Loading')
+            progress_bar = tqdm(total=self.get_file_size(
+                file_path), unit='B', unit_scale=True, unit_divisor=1024, desc='Loading')
 
             # Open the file using the custom BlockReader and load with joblib
             with self.s3_session.open(file_path, "rb",) as file:
@@ -54,14 +56,14 @@ class S3Utils:
                         break
                     chunks.append(chunk)
                     progress_bar.update(len(chunk))
-                
+
             progress_bar.close()
-            
+
             csv_data = b"".join(chunks).decode()
             dataframe = pd.read_csv(io.StringIO(csv_data))
             return dataframe
-        except Exception as e:
-            print(f"Error reading csv data as dataframe from S3: {e}")
+        except Exception as error:
+            print(f"Error reading csv data as dataframe from S3: {error}")
             return None
 
     def save_dataframe(self, dirPath: str, fileName: str, df: pd.DataFrame) -> None:
@@ -77,10 +79,10 @@ class S3Utils:
             file_exists = self.s3_session.exists(file_path)
             if file_exists:
                 print(f"csv file '{fileName}' is saved to S3 successfully.")
-        except Exception as e:
-            print(f"Error saving dataframe as csv to S3: {e}")
+        except Exception as error:
+            print(f"Error saving dataframe as csv to S3: {error}")
 
-    def save_pickle(self, dirPath: str, fileName: str, data: any, compress: bool=True) -> None:
+    def save_pickle(self, dirPath: str, fileName: str, data: any, compress: bool = True) -> None:
         """Function to save pickle file to S3 storage using joblib"""
 
         try:
@@ -100,10 +102,10 @@ class S3Utils:
             file_exists = self.s3_session.exists(file_path)
             if file_exists:
                 print(f"Pickle file '{fileName}' saved to S3 successfully.")
-        except Exception as e:
-            print(f"Error saving pickle file to S3: {e}")
+        except Exception as error:
+            print(f"Error saving pickle file to S3: {error}")
 
-    def load_pickle(self, dirPath: str, fileName: str, compressed: bool=True) -> any:
+    def load_pickle(self, dirPath: str, fileName: str, compressed: bool = True) -> any:
         """Function to load pickel file from S3 storage using joblib"""
 
         try:
@@ -114,7 +116,8 @@ class S3Utils:
             # Define a custom block size for reading the file
             block_size = 8192
 
-            progress_bar = tqdm(total=self.get_file_size(file_path), unit='B', unit_scale=True, unit_divisor=1024, desc='Loading')
+            progress_bar = tqdm(total=self.get_file_size(
+                file_path), unit='B', unit_scale=True, unit_divisor=1024, desc='Loading')
 
             # Open the file using the custom BlockReader and load with joblib
             with self.s3_session.open(file_path, "rb",) as file:
@@ -125,7 +128,7 @@ class S3Utils:
                         break
                     chunks.append(chunk)
                     progress_bar.update(len(chunk))
-                
+
             progress_bar.close()
 
             file_obj = b''.join(chunks)
@@ -136,8 +139,8 @@ class S3Utils:
             else:
                 data = joblib.load(io.BytesIO(file_obj))
             return data
-        except Exception as e:
-            print(f"Error loading pickle file from S3 storage: {e}")
+        except Exception as error:
+            print(f"Error loading pickle file from S3 storage: {error}")
             return None
 
     def check_file_exist(self, dirPath: str, fileName: str) -> bool:
@@ -146,7 +149,7 @@ class S3Utils:
         try:
             file_path = self.get_s3_path(dirPath, fileName)
             print(f"Checking for the file {file_path}")
-            
+
             # Checking the file
             file_exist = self.s3_session.exists(file_path)
             if file_exist:
@@ -154,5 +157,5 @@ class S3Utils:
             else:
                 print(f"File {file_path} does not exist")
             return file_exist
-        except Exception as e:
-            print(f"Error checking the file in S3: {e}")
+        except Exception as error:
+            print(f"Error checking the file in S3: {error}")
