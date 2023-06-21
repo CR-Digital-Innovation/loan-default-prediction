@@ -6,6 +6,7 @@ import requests
 import streamlit as st
 import pandas as pd
 import json
+import plotly.graph_objects as go
 
 # Get the absolute path to the project root directory
 # project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -18,6 +19,15 @@ import json
 
 # Loading Backend Host URL from Env variable
 BACKEND_HOST_URL = os.getenv("BACKEND_HOST_URL")
+
+
+# Setting colors for the prediction results
+
+colors = {
+    "Confirmed Repayer": "#a3b966",
+    "Probable Defaulter": "#eb9b56",
+    "Confirmed Defaulter": "#b92e36"
+}
 
 
 # Streamlit configuration
@@ -112,24 +122,19 @@ def get_prediction(row):
 
     if class_1_prob <= 0.2:
         prediction = "Confirmed Repayer"
-        confidence_score = class_0_prob * 100
+        confidence_score = round(class_0_prob * 100, 2)
     elif class_1_prob < 0.7:
         prediction = "Probable Defaulter"
-        confidence_score = max(class_0_prob, class_1_prob) * 100
+        confidence_score = round(max(class_0_prob, class_1_prob) * 100, 2)
     else:
         prediction = "Confirmed Defaulter"
-        confidence_score = class_1_prob * 100
+        confidence_score = round(class_1_prob * 100, 2)
 
     return prediction, confidence_score
 
 
 def highlight_prediction(value):
-    if value == "Confirmed Defaulter":
-        color = "#b92e36"
-    elif value == "Confirmed Repayer":
-        color = "#a3b966"
-    else:
-        color = "#eb9b56"
+    color = colors[value]
 
     return f"background-color: {color}"
 
@@ -156,12 +161,7 @@ def predict_csv(csv_data: list):
             ["SK_ID_CURR", "Prediction", "Confidence Score"]
         ]
 
-        # Apply color style to specific column
-        predict_desc_styled_df = predict_desc_df.style.applymap(
-            highlight_prediction, subset=["Prediction"]
-        )
-
-        return predict_desc_styled_df
+        return predict_desc_df
 
 
 def main():
@@ -191,7 +191,43 @@ def main():
     if st.button("Predict"):
         predict_result_df = predict_csv(csv_data)  # Predict with CSV data
         # predict_result_df = predict_df(input_df)  # Predict with dataframe
-        st.write(predict_result_df)
+        # Apply color style to specific column
+        
+        predict_desc_styled_df = predict_result_df.style.applymap(
+            highlight_prediction, subset=["Prediction"]
+        )
+
+        st.write(predict_desc_styled_df)
+
+        # Create a histogram chart using Plotly
+        fig = go.Figure()
+
+        # Iterate over unique prediction results and add the bars
+        for prediction in predict_result_df['Prediction'].unique():
+            subset = predict_result_df[predict_result_df['Prediction'] == prediction]
+            fig.add_trace(go.Bar(
+                x=[str(id_) for id_ in subset['SK_ID_CURR']],
+                y=subset['Confidence Score'],
+                name=prediction,
+                marker_color=colors[prediction], 
+                #width=1
+            ))
+
+        # Set chart title and axes labels
+        fig.update_layout(
+            title='Prediction results',
+            xaxis_title='SK_ID_CURR',
+            yaxis_title='Confidence Score (%)',
+            xaxis=dict(
+                type='category',
+                categoryorder='array',
+                categoryarray=[str(id_) for id_ in predict_result_df['SK_ID_CURR']],
+                tickangle=-90
+            )
+        )
+
+        # Display the histogram chart
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
 if __name__ == "__main__":
