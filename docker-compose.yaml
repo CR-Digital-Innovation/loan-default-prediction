@@ -3,7 +3,7 @@ services:
   frontend:
     build:
       context: ./src
-      dockerfile: src/frontend/Dockerfile
+      dockerfile: frontend/Dockerfile
     image: loan-default-risk-prediction/frontend:latest
     container_name: ldr-frontend
     restart: unless-stopped
@@ -19,9 +19,9 @@ services:
   backend:
     build:
       context: ./src
-      dockerfile: src/backend/Dockerfile
+      dockerfile: backend/Dockerfile
     image: loan-default-risk-prediction/backend:latest
-    container_name: backend
+    container_name: ldr-backend
     restart: unless-stopped
     networks:
       - st_fastapi_net
