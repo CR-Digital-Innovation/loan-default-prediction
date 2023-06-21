@@ -1,0 +1,33 @@
+version: '3.9'
+services:
+  frontend:
+    build:
+      context: ./src
+      dockerfile: src/frontend/Dockerfile
+    image: loan-default-risk-prediction/frontend:latest
+    container_name: ldr-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - st_fastapi_net
+    environment:
+      BACKEND_HOST_URL: http://backend:8000
+    ports:
+      - 80:8501
+
+  backend:
+    build:
+      context: ./src
+      dockerfile: src/backend/Dockerfile
+    image: loan-default-risk-prediction/backend:latest
+    container_name: backend
+    restart: unless-stopped
+    networks:
+      - st_fastapi_net
+    ports:
+      - 8000:8000
+
+networks:
+  st_fastapi_net:
+    driver: bridge
