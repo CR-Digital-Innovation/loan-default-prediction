@@ -5,7 +5,7 @@ import os
 import sys
 
 # Get the absolute path to the project root directory
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # Add the project root directory to the PYTHONPATH
 sys.path.insert(0, project_root)
@@ -26,7 +26,7 @@ preprocessing_pipeline, columns = preprocess_data(X, unwanted_columns, scale_col
 
 # Train the model
 print("---------------------- MODEL TRAINING ----------------------")
-model= train_model(preprocessing_pipeline, X_train, y_train)
+model = train_model(preprocessing_pipeline, X_train, y_train)
 
 # Evaluate the model
 print("---------------------- MODEL EVALUATING ----------------------")
@@ -34,7 +34,7 @@ evaluate_model(model, X_test, y_test)
 
 
 if __name__ == "__main__":
-    """Save the model to S3 with your desired file name else will be saved with default name 
+    """Save the model to S3 with your desired file name else will be saved with default name
 
     To save the model as a pickle file with your choice of file name provide the --filename flag followed by your filename
         Ex:
@@ -52,10 +52,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Check if filename is provided, otherwise use default
-    filename = f"{args.filename}.pkl" if args.filename else f"{MODEL_NAME}_{MODEL_VERSION}.pkl"
+    filename = (
+        f"{args.filename}.pkl" if args.filename else f"{MODEL_NAME}_{MODEL_VERSION}.pkl"
+    )
 
     # Save the model
     print("---------------------- SAVING THE MODEL TO S3 ----------------------")
     s3_utils.save_pickle(
-                AWS_S3_DATA_DIRECTORY_MODELS, filename, model,
-            )
+        AWS_S3_DATA_DIRECTORY_MODELS,
+        filename,
+        model,
+    )

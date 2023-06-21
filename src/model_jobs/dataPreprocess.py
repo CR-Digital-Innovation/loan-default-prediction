@@ -5,7 +5,7 @@ import os
 import sys
 
 # Get the absolute path to the project root directory
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # Add the project root directory to the PYTHONPATH
 sys.path.insert(0, project_root)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         1. Provide --save-to-csv flag.
         2. Optionally, you can parse a filename with --filename argument.
         Ex:
-            python dataPreprrocess.py --save-to-csv --filename 'processed_data'
+            python dataPreprocess.py --save-to-csv --filename 'processed_data'
 
     To save the processed dataframe as a pickle file:
         1. Provide --save-to-pkl flag.

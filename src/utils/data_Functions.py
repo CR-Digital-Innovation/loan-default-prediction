@@ -357,7 +357,8 @@ def preprocess_data(
                                 (
                                     f"impute_{column}",
                                     SimpleImputer(
-                                        strategy="constant", fill_value="Unknown",
+                                        strategy="constant",
+                                        fill_value="Unknown",
                                     ),
                                 ),
                                 (f"encode_{column}", CategoricalEncoder()),

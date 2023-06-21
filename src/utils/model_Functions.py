@@ -11,10 +11,11 @@ from sklearn.metrics import (
 )
 
 
-
 def split_data(
     df: pd.DataFrame, target_column: str, test_size: float = 0.2, random_state: int = 42
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+]:
     """Function to split the data into train and test samples"""
 
     # Split the features and target variables
@@ -28,8 +29,8 @@ def split_data(
     return X, y, X_train, X_test, y_train, y_test
 
 
-def train_model(data_pipeline: any, X: pd.DataFrame, y: pd.DataFrame, n: int=5):
-    """Function to train the Random Forest Classifier model with preprocessed data using K-Fold Cross Validation to find the best model and accuracy."""
+def train_model(data_pipeline: any, X: pd.DataFrame, y: pd.DataFrame) -> Pipeline:
+    """Function to preprocess the data followed by RandomForest Model training and return Pipeline."""
 
     # Create model Pipeline
     model_pipeline = Pipeline(
@@ -45,7 +46,7 @@ def train_model(data_pipeline: any, X: pd.DataFrame, y: pd.DataFrame, n: int=5):
     return model_pipeline
 
 
-def evaluate_model(model, X_test, y_test):
+def evaluate_model(model, X_test, y_test) -> None:
     """Function to evaluate the model on test data and print model metrics."""
 
     # Make predictions on test data

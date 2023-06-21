@@ -32,7 +32,7 @@ class S3Utils:
         """Function to get the file size of a file in S3"""
 
         file_info = self.s3_session.info(filePath)
-        return file_info['size']
+        return file_info["size"]
 
     def load_dataframe(self, dirPath: str, fileName: str) -> pd.DataFrame:
         """Function to load csv/tsv file from AWS S3 bucket and retun a pandas dataframe"""
@@ -44,11 +44,19 @@ class S3Utils:
             # Define a custom block size for reading the file
             block_size = 8192
 
-            progress_bar = tqdm(total=self.get_file_size(
-                file_path), unit='B', unit_scale=True, unit_divisor=1024, desc='Loading')
+            progress_bar = tqdm(
+                total=self.get_file_size(file_path),
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                desc="Loading",
+            )
 
             # Open the file using the custom BlockReader and load with joblib
-            with self.s3_session.open(file_path, "rb",) as file:
+            with self.s3_session.open(
+                file_path,
+                "rb",
+            ) as file:
                 chunks = []
                 while True:
                     chunk = file.read(block_size)
@@ -82,7 +90,9 @@ class S3Utils:
         except Exception as error:
             print(f"Error saving dataframe as csv to S3: {error}")
 
-    def save_pickle(self, dirPath: str, fileName: str, data: any, compress: bool = True) -> None:
+    def save_pickle(
+        self, dirPath: str, fileName: str, data: any, compress: bool = True
+    ) -> None:
         """Function to save pickle file to S3 storage using joblib"""
 
         try:
@@ -92,7 +102,9 @@ class S3Utils:
 
             if compress:
                 with self.s3_session.open(file_path, "wb") as file:
-                    with gzip.GzipFile(fileobj=file, mode='wb', compresslevel=6) as gz_file:
+                    with gzip.GzipFile(
+                        fileobj=file, mode="wb", compresslevel=6
+                    ) as gz_file:
                         joblib.dump(data, gz_file)
             else:
                 with self.s3_session.open(file_path, "wb") as file:
@@ -116,11 +128,19 @@ class S3Utils:
             # Define a custom block size for reading the file
             block_size = 8192
 
-            progress_bar = tqdm(total=self.get_file_size(
-                file_path), unit='B', unit_scale=True, unit_divisor=1024, desc='Loading')
+            progress_bar = tqdm(
+                total=self.get_file_size(file_path),
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                desc="Loading",
+            )
 
             # Open the file using the custom BlockReader and load with joblib
-            with self.s3_session.open(file_path, "rb",) as file:
+            with self.s3_session.open(
+                file_path,
+                "rb",
+            ) as file:
                 chunks = []
                 while True:
                     chunk = file.read(block_size)
@@ -131,10 +151,10 @@ class S3Utils:
 
             progress_bar.close()
 
-            file_obj = b''.join(chunks)
+            file_obj = b"".join(chunks)
 
             if compressed:
-                with gzip.GzipFile(fileobj=io.BytesIO(file_obj), mode='rb') as gz_file:
+                with gzip.GzipFile(fileobj=io.BytesIO(file_obj), mode="rb") as gz_file:
                     data = joblib.load(gz_file)
             else:
                 data = joblib.load(io.BytesIO(file_obj))
