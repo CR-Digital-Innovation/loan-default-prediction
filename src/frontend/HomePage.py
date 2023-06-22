@@ -26,7 +26,7 @@ BACKEND_HOST_URL = os.getenv("BACKEND_HOST_URL")
 colors = {
     "Confirmed Repayer": "#a3b966",
     "Probable Defaulter": "#eb9b56",
-    "Confirmed Defaulter": "#b92e36"
+    "Confirmed Defaulter": "#b92e36",
 }
 
 
@@ -192,7 +192,7 @@ def main():
         predict_result_df = predict_csv(csv_data)  # Predict with CSV data
         # predict_result_df = predict_df(input_df)  # Predict with dataframe
         # Apply color style to specific column
-        
+
         predict_desc_styled_df = predict_result_df.style.applymap(
             highlight_prediction, subset=["Prediction"]
         )
@@ -203,27 +203,29 @@ def main():
         fig = go.Figure()
 
         # Iterate over unique prediction results and add the bars
-        for prediction in predict_result_df['Prediction'].unique():
-            subset = predict_result_df[predict_result_df['Prediction'] == prediction]
-            fig.add_trace(go.Bar(
-                x=[str(id_) for id_ in subset['SK_ID_CURR']],
-                y=subset['Confidence Score'],
-                name=prediction,
-                marker_color=colors[prediction], 
-                #width=1
-            ))
+        for prediction in predict_result_df["Prediction"].unique():
+            subset = predict_result_df[predict_result_df["Prediction"] == prediction]
+            fig.add_trace(
+                go.Bar(
+                    x=[str(id_) for id_ in subset["SK_ID_CURR"]],
+                    y=subset["Confidence Score"],
+                    name=prediction,
+                    marker_color=colors[prediction],
+                    # width=1
+                )
+            )
 
         # Set chart title and axes labels
         fig.update_layout(
-            title='Prediction results',
-            xaxis_title='SK_ID_CURR',
-            yaxis_title='Confidence Score (%)',
+            title="Prediction results",
+            xaxis_title="SK_ID_CURR",
+            yaxis_title="Confidence Score (%)",
             xaxis=dict(
-                type='category',
-                categoryorder='array',
-                categoryarray=[str(id_) for id_ in predict_result_df['SK_ID_CURR']],
-                tickangle=-90
-            )
+                type="category",
+                categoryorder="array",
+                categoryarray=[str(id_) for id_ in predict_result_df["SK_ID_CURR"]],
+                tickangle=-90,
+            ),
         )
 
         # Display the histogram chart
