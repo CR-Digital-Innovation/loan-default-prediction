@@ -1,3 +1,5 @@
+# pylint: disable=W0613
+"""Utility Class to apply fit and transform to the LabelEncoder method during ColumnTransfer Preprocessing."""
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import LabelEncoder
 
@@ -7,7 +9,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         self.label_encoder = LabelEncoder()
 
     def fit(self, X, y=None):
-        #self.label_encoder = LabelEncoder()
+        # self.label_encoder = LabelEncoder()
         self.label_encoder.fit(X)
         return self
 

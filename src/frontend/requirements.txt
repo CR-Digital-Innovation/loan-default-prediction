@@ -1,0 +1,7 @@
+###### REQUIREMENTS FOR FRONTEND ######
+
+pandas == 2.0.2
+streamlit == 1.23.1
+requests == 2.31.0
+plotly == 5.15.0
+#python-dotenv == 1.0.0
