@@ -1,0 +1,22 @@
+# AWS Access Settings
+AWS_ACCESS_KEY_ID=<your-aws-access-key-id>
+AWS_SECRET_ACCESS_KEY=<your-aws-secret-key>
+
+# AWS S3 settings
+AWS_S3_BUCKET=<your-s3-bucket-name>
+AWS_S3_DATA_DIRECTORY=<your-directory-path-in-s3-bucket>
+AWS_S3_DATA_DIRECTORY_ORIGINAL=<original-data-directory-path>
+AWS_S3_DATA_DIRECTORY_RAW=<raw-data-directory-path>
+AWS_S3_DATA_DIRECTORY_PROCESSED=<processed-data-directory-path>
+AWS_S3_DATA_DIRECTORY_MODELS=<model-directory-path>
+
+# Data file names
+APPLICATION_DATASET=<application-data-file-name>
+DEMO_DATASET=<demo-data-file-name>
+
+# Model settings
+MODEL_NAME=<default-model-name>
+MODEL_VERSION=<default-model-version>
+
+# Backend API settings
+BACKEND_HOST_URL="http://localhost:8000"
