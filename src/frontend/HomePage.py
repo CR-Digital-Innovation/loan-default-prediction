@@ -185,7 +185,7 @@ def main():
 
         with col2:
             col2_1, col2_2 = st.columns(2)
-            col2_1.metric("**Accuracy**", round(predict_results["accuracy"], 2))
+            col2_1.metric("**Accuracy in %**", round(predict_results["accuracy"] * 100, 2))
             col2_2.metric("**F1 Score**", round(predict_results["f1_score"], 2))
             cm = pd.DataFrame(predict_results["cm"])
             fig_cm = px.imshow(
@@ -211,7 +211,7 @@ def main():
             fig.add_trace(
                 go.Bar(
                     x=[str(id_) for id_ in subset["SK_ID_CURR"]],
-                    y=subset["Confidence Score"],
+                    y=subset["Confidence Score in %"],
                     name=prediction,
                     marker_color=colors[prediction],
                     # width=1

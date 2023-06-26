@@ -117,12 +117,12 @@ async def csv_predict(csv_data: list):
             )
 
             # Apply transformation to create the new DataFrame
-            results["Prediction"], results["Confidence Score"] = zip(
+            results["Prediction"], results["Confidence Score in %"] = zip(
                 *results.apply(get_prediction, axis=1)
             )
 
             # Select and reorder the desired columns
-            predict_desc_df = results[["SK_ID_CURR", "Prediction", "Confidence Score"]]
+            predict_desc_df = results[["SK_ID_CURR", "Prediction", "Confidence Score in %"]]
 
             # Caluclate metrics
             cm = confusion_matrix(y_true, predictions)
