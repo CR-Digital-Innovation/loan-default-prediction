@@ -167,16 +167,17 @@ def main():
         st.write(input_df)
 
     if st.button("Predict"):
-        predict_results = predict_csv(csv_data)  # Predict with CSV data
-        # predict_result_df = predict_df(input_df)  # Predict with dataframe
-        # Apply color style to specific column
+        with st.spinner("Predicting loan default risk..."):
+            predict_results = predict_csv(csv_data)  # Predict with CSV data
+            # predict_result_df = predict_df(input_df)  # Predict with dataframe
 
-        predict_result_df = pd.read_json(predict_results["predictions"])
+            predict_result_df = pd.read_json(predict_results["predictions"])
 
-        predict_results_styled_df = predict_result_df.style.applymap(
-            highlight_prediction, subset=["Prediction"]
-        )
-        accuracy = round(predict_results["accuracy"] * 100, 2)
+            # Apply color style to specific column
+            predict_results_styled_df = predict_result_df.style.applymap(
+                highlight_prediction, subset=["Prediction"]
+            )
+            accuracy = round(predict_results["accuracy"] * 100, 2)
 
         col1, col2 = st.columns(2)
 
