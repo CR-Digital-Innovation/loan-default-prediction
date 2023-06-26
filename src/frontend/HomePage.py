@@ -177,6 +177,7 @@ def main():
         predict_results_styled_df = predict_result_df.style.applymap(
             highlight_prediction, subset=["Prediction"]
         )
+        accuracy = round(predict_results["accuracy"] * 100, 2)
 
         col1, col2 = st.columns(2)
 
@@ -185,7 +186,7 @@ def main():
 
         with col2:
             col2_1, col2_2 = st.columns(2)
-            col2_1.metric("**Accuracy in %**", round(predict_results["accuracy"] * 100, 2))
+            col2_1.metric("**Accuracy**", f"{accuracy}%")
             col2_2.metric("**F1 Score**", round(predict_results["f1_score"], 2))
             cm = pd.DataFrame(predict_results["cm"])
             fig_cm = px.imshow(
