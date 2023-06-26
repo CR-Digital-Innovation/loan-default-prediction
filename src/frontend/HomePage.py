@@ -50,7 +50,6 @@ st.markdown(
         bottom: 0;
         width: 100%;
         color: white;
-        font
     }
     </style> 
     <div class="footer">
