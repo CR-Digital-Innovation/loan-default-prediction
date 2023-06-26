@@ -6,6 +6,7 @@ import requests
 import streamlit as st
 import pandas as pd
 import json
+import plotly.express as px
 import plotly.graph_objects as go
 
 # Get the absolute path to the project root directory
@@ -18,8 +19,8 @@ import plotly.graph_objects as go
 # from utils.load_EnvVars import BACKEND_HOST_URL
 
 # Loading Backend Host URL from Env variable
+# BACKEND_HOST_URL = "http://127.0.0.1:8000"
 BACKEND_HOST_URL = os.getenv("BACKEND_HOST_URL")
-
 
 # Setting colors for the prediction results
 
@@ -115,24 +116,6 @@ def predict_df(df: pd.DataFrame):
             return predict_result_df
 
 
-def get_prediction(row):
-    # Function to deterimine prediction category and confidence score
-    class_0_prob = row["Probability 0"]
-    class_1_prob = row["Probability 1"]
-
-    if class_1_prob <= 0.2:
-        prediction = "Confirmed Repayer"
-        confidence_score = round(class_0_prob * 100, 2)
-    elif class_1_prob < 0.7:
-        prediction = "Probable Defaulter"
-        confidence_score = round(max(class_0_prob, class_1_prob) * 100, 2)
-    else:
-        prediction = "Confirmed Defaulter"
-        confidence_score = round(class_1_prob * 100, 2)
-
-    return prediction, confidence_score
-
-
 def highlight_prediction(value):
     color = colors[value]
 
@@ -146,22 +129,7 @@ def predict_csv(csv_data: list):
     # Get response
     response = requests.post(API_ENDPOINT, json=csv_data)  # To parse CSV data
     if response.status_code == 200:
-        predict_results = response.json()
-
-        predict_result_df = pd.DataFrame.from_dict(predict_results)
-        # st.write(predict_result_df)
-
-        # Apply transformation to create the new DataFrame
-        predict_result_df["Prediction"], predict_result_df["Confidence Score"] = zip(
-            *predict_result_df.apply(get_prediction, axis=1)
-        )
-
-        # Select and reorder the desired columns
-        predict_desc_df = predict_result_df[
-            ["SK_ID_CURR", "Prediction", "Confidence Score"]
-        ]
-
-        return predict_desc_df
+        return response.json()
 
 
 def main():
@@ -179,25 +147,49 @@ def main():
     if option == "Upload a CSV File":
         csv_data = upload_file()
         input_df = pd.DataFrame(csv_data)
-        st.write("Extracted Information:")
+        st.write("**Extracted Information:**")
         st.write(input_df)
 
     elif option == "Paste CSV Text":
         csv_data = text_input()
         input_df = pd.DataFrame(csv_data)
-        st.write("Extracted Information:")
+        st.write("**Extracted Information:**")
         st.write(input_df)
 
     if st.button("Predict"):
-        predict_result_df = predict_csv(csv_data)  # Predict with CSV data
+        predict_results = predict_csv(csv_data)  # Predict with CSV data
         # predict_result_df = predict_df(input_df)  # Predict with dataframe
         # Apply color style to specific column
 
-        predict_desc_styled_df = predict_result_df.style.applymap(
+        predict_result_df = pd.read_json(predict_results["predictions"])
+
+        predict_results_styled_df = predict_result_df.style.applymap(
             highlight_prediction, subset=["Prediction"]
         )
 
-        st.write(predict_desc_styled_df)
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.write("**Predictions:**\n", predict_results_styled_df)
+
+        with col2:
+            col2_1, col2_2 = st.columns(2)
+            col2_1.metric("**Accuracy**", round(predict_results["accuracy"], 2))
+            col2_2.metric("**F1 Score**", round(predict_results["f1_score"], 2))
+            cm = pd.DataFrame(predict_results["cm"])
+            fig_cm = px.imshow(
+                cm,
+                text_auto=True,
+                labels=dict(x="Predicted Labels", y="Actual Labels"),
+                x=["Class 0", "Class 1"],
+                y=["Class 0", "Class 1"],
+                title="Confusion Matrix",
+                height=400,
+            )
+            st.plotly_chart(
+                fig_cm, use_container_width=True, config={"displayModeBar": False}
+            )
+            # st.write(cm)
 
         # Create a histogram chart using Plotly
         fig = go.Figure()

@@ -7,6 +7,7 @@ from typing import List, Dict
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
 
 # Get the absolute path to the project root directory
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -69,6 +70,24 @@ model_wrapper = ModelWrapper(
 )
 
 
+def get_prediction(row):
+    # Function to deterimine prediction category and confidence score
+    class_0_prob = row["Probability 0"]
+    class_1_prob = row["Probability 1"]
+
+    if class_1_prob <= 0.2:
+        prediction = "Confirmed Repayer"
+        confidence_score = round(class_0_prob * 100, 2)
+    elif class_1_prob < 0.7:
+        prediction = "Probable Defaulter"
+        confidence_score = round(max(class_0_prob, class_1_prob) * 100, 2)
+    else:
+        prediction = "Confirmed Defaulter"
+        confidence_score = round(class_1_prob * 100, 2)
+
+    return prediction, confidence_score
+
+
 @app.post("/csv_predict")
 async def csv_predict(csv_data: list):
     try:
@@ -79,6 +98,7 @@ async def csv_predict(csv_data: list):
             return {"error": "The uploaded CSV file does not contain any columns."}
         else:
             if "TARGET" in dataframe.columns:
+                y_true = dataframe["TARGET"]
                 dataframe.drop("TARGET", axis=1, inplace=True)
 
             dataframe = dataframe.replace(to_replace={None: np.nan})
@@ -96,7 +116,25 @@ async def csv_predict(csv_data: list):
                 }
             )
 
-            return results.to_dict(orient="records")
+            # Apply transformation to create the new DataFrame
+            results["Prediction"], results["Confidence Score"] = zip(
+                *results.apply(get_prediction, axis=1)
+            )
+
+            # Select and reorder the desired columns
+            predict_desc_df = results[["SK_ID_CURR", "Prediction", "Confidence Score"]]
+
+            # Caluclate metrics
+            cm = confusion_matrix(y_true, predictions)
+            accuracy = accuracy_score(y_true, predictions)
+            f1 = f1_score(y_true, predictions)
+
+            return {
+                "predictions": predict_desc_df.to_json(orient="records"),
+                "cm": cm.tolist(),
+                "accuracy": accuracy,
+                "f1_score": f1,
+            }
     except Exception as error:
         return {"error": str(error)}
 
