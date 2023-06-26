@@ -42,9 +42,20 @@ st.set_page_config(
 )
 st.markdown(
     """ <style>
-    MainMenu {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    </style> """,
+    .footer {
+        position: fixed;
+        left: 80px;
+        bottom: 0;
+        width: 100%;
+        color: white;
+        font
+    }
+    </style> 
+    <div class="footer">
+    <p>©️ 2023, CriticalRiver Inc. All rights reserved.</p>
+    </div> """,
     unsafe_allow_html=True,
 )
 
