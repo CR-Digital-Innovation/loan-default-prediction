@@ -187,7 +187,7 @@ def main():
                 height=400,
             )
             st.plotly_chart(
-                fig_cm, use_container_width=True, config={"displayModeBar": False}
+                fig_cm, use_container_width=False, config={"displayModeBar": False}
             )
             # st.write(cm)
 
