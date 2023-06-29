@@ -22,13 +22,13 @@ format:
 	black src
 
 docker-build:
-	docker-compose build
+	sudo docker-compose build
 
 docker-deploy:
-	docker-compose up --build
+	sudo docker-compose up --build
 
 docker-destroy:
-	docker-compose down --rmi all
+	sudo docker-compose down --rmi all
 
 all:
 	install lint
