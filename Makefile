@@ -25,7 +25,7 @@ docker-build:
 	sudo docker-compose build
 
 docker-deploy:
-	sudo docker-compose up --build
+	sudo docker-compose up -d --build
 
 docker-destroy:
 	sudo docker-compose down --rmi all
