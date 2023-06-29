@@ -21,5 +21,14 @@ lint:
 format:
 	black src
 
+docker-build:
+	docker-compose build
+
+docker-deploy:
+	docker-compose up --build
+
+docker-destroy:
+	docker-compose down --rmi all
+
 all:
 	install lint
