@@ -151,6 +151,7 @@ def main():
     st.subheader("Upload the application data in csv format and get predictions")
 
     st.write("Select an option to either upload a csv file or paste data in csv format")
+    st.markdown("Download demo files from [here](https://github.com/CR-Digital-Innovation/loan-default-prediction/tree/develop/data)")
 
     option = st.selectbox("Choose an option", ("Upload a CSV File", "Paste CSV Text"))
 
