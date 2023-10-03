@@ -168,73 +168,77 @@ def main():
         st.write(input_df)
 
     if st.button("Predict"):
-        with st.spinner("Predicting loan default risk..."):
-            predict_results = predict_csv(csv_data)  # Predict with CSV data
-            # predict_result_df = predict_df(input_df)  # Predict with dataframe
+        if csv_data is not None:
+            with st.spinner("Predicting loan default risk..."):
+                predict_results = predict_csv(csv_data)  # Predict with CSV data
+                # predict_result_df = predict_df(input_df)  # Predict with dataframe
 
-            predict_result_df = pd.read_json(predict_results["predictions"])
+                predict_result_df = pd.read_json(predict_results["predictions"])
 
-            # Apply color style to specific column
-            predict_results_styled_df = predict_result_df.style.applymap(
-                highlight_prediction, subset=["Prediction"]
-            )
-            accuracy = round(predict_results["accuracy"] * 100, 2)
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.write("**Predictions:**\n", predict_results_styled_df)
-
-        with col2:
-            col2_1, col2_2 = st.columns(2)
-            col2_1.metric("**Accuracy**", f"{accuracy}%")
-            col2_2.metric("**F1 Score**", round(predict_results["f1_score"], 2))
-            cm = pd.DataFrame(predict_results["cm"])
-            fig_cm = px.imshow(
-                cm,
-                text_auto=True,
-                labels=dict(x="Predicted Labels", y="Actual Labels"),
-                x=["Class 0", "Class 1"],
-                y=["Class 0", "Class 1"],
-                title="Confusion Matrix",
-                height=400,
-            )
-            st.plotly_chart(
-                fig_cm, use_container_width=False, config={"displayModeBar": False}
-            )
-            # st.write(cm)
-
-        # Create a histogram chart using Plotly
-        fig = go.Figure()
-
-        # Iterate over unique prediction results and add the bars
-        for prediction in predict_result_df["Prediction"].unique():
-            subset = predict_result_df[predict_result_df["Prediction"] == prediction]
-            fig.add_trace(
-                go.Bar(
-                    x=[str(id_) for id_ in subset["SK_ID_CURR"]],
-                    y=subset["Confidence Score in %"],
-                    name=prediction,
-                    marker_color=colors[prediction],
-                    # width=1
+                # Apply color style to specific column
+                predict_results_styled_df = predict_result_df.style.applymap(
+                    highlight_prediction, subset=["Prediction"]
                 )
+                accuracy = round(predict_results["accuracy"] * 100, 2)
+
+            col1, col2 = st.columns(2)
+            
+
+            with col1:
+                st.write("**Predictions:**\n", predict_results_styled_df)
+
+            with col2:
+                col2_1, col2_2 = st.columns(2)
+                col2_1.metric("**Accuracy**", f"{accuracy}%")
+                col2_2.metric("**F1 Score**", round(predict_results["f1_score"], 2))
+                cm = pd.DataFrame(predict_results["cm"])
+                fig_cm = px.imshow(
+                    cm,
+                    text_auto=True,
+                    labels=dict(x="Predicted Labels", y="Actual Labels"),
+                    x=["Class 0", "Class 1"],
+                    y=["Class 0", "Class 1"],
+                    title="Confusion Matrix",
+                    height=400,
+                )
+                st.plotly_chart(
+                    fig_cm, use_container_width=False, config={"displayModeBar": False}
+                )
+                # st.write(cm)
+
+            # Create a histogram chart using Plotly
+            fig = go.Figure()
+
+            # Iterate over unique prediction results and add the bars
+            for prediction in predict_result_df["Prediction"].unique():
+                subset = predict_result_df[predict_result_df["Prediction"] == prediction]
+                fig.add_trace(
+                    go.Bar(
+                        x=[str(id_) for id_ in subset["SK_ID_CURR"]],
+                        y=subset["Confidence Score in %"],
+                        name=prediction,
+                        marker_color=colors[prediction],
+                        # width=1
+                    )
+                )
+
+            # Set chart title and axes labels
+            fig.update_layout(
+                title="Prediction results",
+                xaxis_title="SK_ID_CURR",
+                yaxis_title="Confidence Score (%)",
+                xaxis=dict(
+                    type="category",
+                    categoryorder="array",
+                    categoryarray=[str(id_) for id_ in predict_result_df["SK_ID_CURR"]],
+                    tickangle=-90,
+                ),
             )
 
-        # Set chart title and axes labels
-        fig.update_layout(
-            title="Prediction results",
-            xaxis_title="SK_ID_CURR",
-            yaxis_title="Confidence Score (%)",
-            xaxis=dict(
-                type="category",
-                categoryorder="array",
-                categoryarray=[str(id_) for id_ in predict_result_df["SK_ID_CURR"]],
-                tickangle=-90,
-            ),
-        )
-
-        # Display the histogram chart
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            # Display the histogram chart
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.error("Please upload appropriate CSV file or Paste appropriate CSV data from provided samples.")
 
 
 if __name__ == "__main__":
