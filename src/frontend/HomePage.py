@@ -181,28 +181,29 @@ def main():
                 )
                 accuracy = round(predict_results["accuracy"] * 100, 2)
 
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns([0.4,0.2,0.4])
             
 
             with col1:
                 st.write("**Predictions:**\n", predict_results_styled_df)
 
             with col2:
-                col2_1, col2_2 = st.columns(2)
-                col2_1.metric("**Accuracy**", f"{accuracy}%")
-                col2_2.metric("**F1 Score**", round(predict_results["f1_score"], 2))
+                st.empty()
+                st.metric(label="**Accuracy**", value=f"{accuracy}%", help="Accuracy is a measure of the model's ability to correctly predict or classify data points.")
+                st.metric(label="**F1 Score**", value=round(predict_results["f1_score"], 2), help="F1 Score is a single metric that combines precision and recall to assess a model's overall performance in binary classification tasks. A higher F1 score indicates a model with better overall accuracy and effectiveness in binary classification tasks.")
+            with col3:
                 cm = pd.DataFrame(predict_results["cm"])
                 fig_cm = px.imshow(
                     cm,
                     text_auto=True,
                     labels=dict(x="Predicted Labels", y="Actual Labels"),
-                    x=["Class 0", "Class 1"],
-                    y=["Class 0", "Class 1"],
+                    x=["Confirmed Repayers", "Confirmed Defaulters"],
+                    y=["Confirmed Repayers", "Confirmed Defaulters"],
                     title="Confusion Matrix",
                     height=400,
                 )
                 st.plotly_chart(
-                    fig_cm, use_container_width=False, config={"displayModeBar": False}
+                    fig_cm, use_container_width=True, config={"displayModeBar": False}
                 )
                 # st.write(cm)
 
