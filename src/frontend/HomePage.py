@@ -155,6 +155,13 @@ def main():
 
     option = st.selectbox("Choose an option", ("Upload a CSV File", "Paste CSV Text"))
 
+    #custom colors
+    colors = {
+        "Confirmed Repayer": "#a3b966",
+        "Probable Defaulter": "#eb9b56",
+        "Confirmed Defaulter": "#b92e36",
+    }
+
     if option == "Upload a CSV File":
         csv_data = upload_file()
         input_df = pd.DataFrame(csv_data)
@@ -164,17 +171,45 @@ def main():
     elif option == "Paste CSV Text":
         csv_data = text_input()
         input_df = pd.DataFrame(csv_data)
+
+       
+
         st.write("**Extracted Information:**")
         st.write(input_df)
+
+    
 
     if st.button("Predict"):
         if csv_data is not None:
             with st.spinner("Predicting loan default risk..."):
+
                 predict_results = predict_csv(csv_data)  # Predict with CSV data
                 # predict_result_df = predict_df(input_df)  # Predict with dataframe
-
+            
                 predict_result_df = pd.read_json(predict_results["predictions"])
+                input_data = pd.DataFrame(csv_data)
 
+                # columns required from the input data
+                columns_to_select_from_input_df = ['SK_ID_CURR','NAME_EDUCATION_TYPE', 'REGION_RATING_CLIENT', 'AMT_INCOME_TOTAL','NAME_INCOME_TYPE','DAYS_EMPLOYED']
+                df_charts = pd.merge(predict_result_df, input_data[columns_to_select_from_input_df], on='SK_ID_CURR', how='inner')
+
+            
+
+                # Creating bins for Employement Time
+                df_charts['YEARS_EMPLOYED'] = df_charts['DAYS_EMPLOYED'].abs() // 365
+                bins = [0,5,10,20,30,40,50,60,150]
+                slots = ['0-5','5-10','10-20','20-30','30-40','40-50','50-60','60 above']
+
+                # Creating bins for income total
+                bin_edges = [0, 100000, 300000, 600000, 900000, float('inf')]
+                bin_labels = ['Less than 1L', '1L-3L', '3L-6L', '6L-9L', 'More than 9L']
+
+                # Create a new column 'Income Range' based on the bins
+                df_charts['Income Range'] = pd.cut(df_charts['AMT_INCOME_TOTAL'], bins=bin_edges, labels=bin_labels, right=False)
+
+
+                df_charts['EMPLOYMENT_YEAR']=pd.cut(df_charts['YEARS_EMPLOYED'],bins=bins,labels=slots)
+            
                 # Apply color style to specific column
                 predict_results_styled_df = predict_result_df.style.applymap(
                     highlight_prediction, subset=["Prediction"]
@@ -205,39 +240,98 @@ def main():
                 st.plotly_chart(
                     fig_cm, use_container_width=True, config={"displayModeBar": False}
                 )
-                # st.write(cm)
 
-            # Create a histogram chart using Plotly
-            fig = go.Figure()
+            plot_col1, plot_col2 = st.columns(2)
 
-            # Iterate over unique prediction results and add the bars
-            for prediction in predict_result_df["Prediction"].unique():
-                subset = predict_result_df[predict_result_df["Prediction"] == prediction]
-                fig.add_trace(
-                    go.Bar(
-                        x=[str(id_) for id_ in subset["SK_ID_CURR"]],
-                        y=subset["Confidence Score in %"],
-                        name=prediction,
-                        marker_color=colors[prediction],
-                        # width=1
-                    )
-                )
+            # distribution plot for loan risk
+            prediction_dist = df_charts['Prediction'].value_counts()
 
-            # Set chart title and axes labels
-            fig.update_layout(
-                title="Prediction results",
-                xaxis_title="SK_ID_CURR",
-                yaxis_title="Confidence Score (%)",
-                xaxis=dict(
-                    type="category",
-                    categoryorder="array",
-                    categoryarray=[str(id_) for id_ in predict_result_df["SK_ID_CURR"]],
-                    tickangle=-90,
-                ),
-            )
+            fig = px.pie(prediction_dist, values=prediction_dist.values, names=prediction_dist.index, title='Prediction Distribution',color=prediction_dist.index,)
 
-            # Display the histogram chart
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            # Apply custom colors based on the 'colors' dictionary
+            for i, sector in enumerate(fig.data[0].labels):
+
+                # Convert the tuple to a list to modify it
+                marker_colors = list(fig.data[0].marker.colors)
+                marker_colors[i] = colors.get(sector, "#1f77b4")
+                fig.data[0].marker.colors = tuple(marker_colors)  
+  
+
+            fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=-0.5, xanchor="center", x=.5),paper_bgcolor='#F1F1F1',plot_bgcolor = '#F1F1F1',title_x = 0.4)
+            plot_col1.plotly_chart(fig, use_container_width=True)
+
+            
+            # plot the graph for income type #
+
+            # Group data by 'NAME_INCOME_TYPE' and 'Prediction' and calculate the percentage within each 'NAME_INCOME_TYPE' category
+            grouped_data = df_charts.groupby(['NAME_INCOME_TYPE', 'Prediction']).size().reset_index(name='Count')
+
+            # Create a grouped bar chart with data labels as percentages
+            fig = px.bar(grouped_data, x='NAME_INCOME_TYPE', y='Count', color='Prediction',
+                        labels={'Prediction': 'Prediction','Count':'Count'},
+                        text='Count', title='Prediction Trends Over Income Type')
+
+            # Apply custom colors based on the 'colors' dictionary
+            for i, category in enumerate(fig.data):
+                if category.name in colors:
+                    fig.data[i].marker.color = colors[category.name]
+
+            fig.update_traces(textangle=0, textposition='inside', insidetextanchor='middle')
+            fig.update_xaxes(title='Type of Income')
+            fig.update_yaxes(title='Count')
+            fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=-0.5, xanchor="center", x=.5,title=""),paper_bgcolor='#F1F1F1',plot_bgcolor = '#F1F1F1',title_x = 0.3)
+
+            # Display the chart in Streamlit
+            plot_col2.plotly_chart(fig,use_container_width=True)
+
+
+            # plot the graph for employement years #
+
+            # Group data by 'Prediction' and 'NAME_INCOME_TYPE' and calculate the percentage
+            grouped_data = df_charts.groupby(['EMPLOYMENT_YEAR', 'Prediction']).size().reset_index(name='Count')
+            
+            # Create a grouped bar chart with data labels as percentages
+            fig = px.bar(grouped_data, x='EMPLOYMENT_YEAR', y='Count', color='Prediction',
+                        labels={'Prediction': 'Prediction', 'Count': 'Count'},
+                        text='Count', title='Prediction Breakdown by Employment Years')
+
+            # Apply custom colors based on the 'colors' dictionary
+            for i, category in enumerate(fig.data):
+                if category.name in colors:
+                    fig.data[i].marker.color = colors[category.name]
+
+            fig.update_traces(textangle=0, textposition='inside', insidetextanchor='middle')
+            fig.update_xaxes(title='Employment in years')
+            fig.update_yaxes(title='Count')
+            fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=-0.5, xanchor="center", x=.5,title=""),paper_bgcolor='#F1F1F1',plot_bgcolor = '#F1F1F1',title_x = 0.3)
+
+            # Display the chart in Streamlit
+            plot_col1.plotly_chart(fig,use_container_width=True)
+
+            # plot for income range for the applicant
+
+
+            # Create a histogram with custom bins
+            grouped_data = df_charts.groupby(['Income Range', 'Prediction']).size().reset_index(name='Count')
+
+            # Create a grouped bar chart with data labels as percentages
+            fig = px.bar(grouped_data, x='Income Range', y='Count', color='Prediction',
+                        labels={'Prediction': 'Prediction', 'Count': 'Count'},
+                        text='Count', title='Prediction Trends Over Income Range')
+
+            # Apply custom colors based on the 'colors' dictionary
+            for i, category in enumerate(fig.data):
+                if category.name in colors:
+                    fig.data[i].marker.color = colors[category.name]
+
+            fig.update_traces(textangle=0, textposition='inside', insidetextanchor='middle')
+            fig.update_xaxes(title='Total Income Values')
+            fig.update_yaxes(title='Count')
+            fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=-0.5, xanchor="center", x=.5,title=""),paper_bgcolor='#F1F1F1',plot_bgcolor = '#F1F1F1',title_x = 0.35)
+
+            # Display the chart in Streamlit
+            plot_col2.plotly_chart(fig,use_container_width=True)
+
         else:
             st.error("Please upload appropriate CSV file or Paste appropriate CSV data from provided samples.")
 
